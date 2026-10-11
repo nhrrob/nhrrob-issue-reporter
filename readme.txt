@@ -1,7 +1,7 @@
 === NHR Issue Reporter ===
 Contributors: nhrrob
 Tags: github, issues, bug report, support, developer
-Requires at least: 6.0
+Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 0.1.0
@@ -17,7 +17,8 @@ Something is wrong with a plugin on your site. NHR Issue Reporter opens an issue
 - **Tools → Report Issue** has the form: plugin, title, what happened and steps to reproduce.
 - Each plugin with a known repository also gets a **Report issue** link in the Plugins list.
 - The versions of the plugin, WordPress, PHP, the theme and the active plugins are added. They are shown in the form first, and you can edit or remove them. The site's address is never added.
-- Before sending, open issues with a similar title are shown, so you can comment on an existing one instead.
+- While you type, open issues with a similar title are listed beside the form, so you can comment on an existing one instead.
+- Light and dark theme, following your system or the switch in the app bar.
 - The **Sent** tab lists the issues you opened, with a link and whether each is open or closed.
 
 ### Which repository
@@ -33,7 +34,8 @@ Only users who can activate plugins can report an issue or change the settings.
 == External services ==
 This plugin connects to the GitHub API (api.github.com), a service of GitHub, Inc. It does so only when a user who can activate plugins:
 
-- sends the report form: the title is sent to search for similar open issues, then the title, the text typed in the form and the environment details shown in the form are sent to open the issue;
+- types a title in the report form: the title is sent to search for similar open issues in the chosen plugin's repository;
+- sends the report form: the title, the text typed in the form and the environment details shown in the form are sent to open the issue;
 - opens the Sent tab: the repository and number of each open issue are sent to ask whether it is still open.
 
 Every request carries the GitHub token you configured. Nothing is sent on the front end, in the background or for visitors.

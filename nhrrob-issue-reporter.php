@@ -6,7 +6,7 @@
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/
  * Version: 0.1.0
- * Requires at least: 6.0
+ * Requires at least: 6.6
  * Requires PHP: 7.4
  * Text Domain: nhrrob-issue-reporter
  * License: GPLv2 or later
@@ -60,13 +60,16 @@ final class NHRRob_Issue_Reporter {
 	}
 
 	/**
-	 * Initialize the plugin. Everything it does happens in the dashboard.
+	 * Initialize the plugin. Everything it does happens in the dashboard, or
+	 * in a REST request the dashboard app makes.
 	 *
 	 * @return void
 	 */
 	public function init_plugin(): void {
+		add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
+		( new \NHRRob\IssueReporter\Rest() )->init();
+
 		if ( is_admin() ) {
-			add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
 			( new \NHRRob\IssueReporter\Admin() )->init();
 		}
 	}

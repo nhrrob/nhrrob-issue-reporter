@@ -47,16 +47,6 @@ class Environment {
 	}
 
 	/**
-	 * The line that names the reported plugin, added when the report is sent.
-	 *
-	 * @param array $plugin One plugin, as Repos::all() returns it.
-	 * @return string
-	 */
-	public static function plugin_line( array $plugin ) {
-		return self::format( [ 'Plugin' => $plugin['name'] . ' ' . $plugin['version'] ] );
-	}
-
-	/**
 	 * Labels and values as a Markdown list.
 	 *
 	 * @param array $lines Label => value.
