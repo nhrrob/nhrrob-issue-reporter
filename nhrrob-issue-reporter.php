@@ -1,0 +1,85 @@
+<?php
+/**
+ * Plugin Name: NHR Issue Reporter
+ * Plugin URI: https://github.com/nhrrob/nhrrob-issue-reporter
+ * Description: Report an issue with a plugin to its GitHub repository, without leaving the dashboard.
+ * Author: Nazmul Hasan Robin
+ * Author URI: https://profiles.wordpress.org/nhrrob/
+ * Version: 0.1.0
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
+ * Text Domain: nhrrob-issue-reporter
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * @package NHRRob\IssueReporter
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+/**
+ * The main plugin class
+ */
+final class NHRRob_Issue_Reporter {
+
+	/**
+	 * Plugin version
+	 *
+	 * @var string
+	 */
+	const VERSION = '0.1.0';
+
+	/**
+	 * Class constructor
+	 */
+	private function __construct() {
+		define( 'NHRROB_ISSUE_REPORTER_VERSION', self::VERSION );
+		define( 'NHRROB_ISSUE_REPORTER_FILE', __FILE__ );
+		define( 'NHRROB_ISSUE_REPORTER_PATH', __DIR__ );
+
+		add_action( 'plugins_loaded', [ $this, 'init_plugin' ] );
+	}
+
+	/**
+	 * Initialize a singleton instance
+	 *
+	 * @return self
+	 */
+	public static function init(): self {
+		static $instance = false;
+
+		if ( ! $instance ) {
+			$instance = new self();
+		}
+
+		return $instance;
+	}
+
+	/**
+	 * Initialize the plugin. Everything it does happens in the dashboard.
+	 *
+	 * @return void
+	 */
+	public function init_plugin(): void {
+		if ( is_admin() ) {
+			add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
+			( new \NHRRob\IssueReporter\Admin() )->init();
+		}
+	}
+}
+
+/**
+ * Initializes the main plugin
+ *
+ * @return NHRRob_Issue_Reporter
+ */
+function nhrrob_issue_reporter(): NHRRob_Issue_Reporter {
+	return NHRRob_Issue_Reporter::init();
+}
+
+// Call the plugin.
+nhrrob_issue_reporter();
