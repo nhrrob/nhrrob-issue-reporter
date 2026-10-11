@@ -1,5 +1,5 @@
 {
-    "name": "nhrrob/issue-reporter",
+    "name": "nhrrob/nhrrob-issue-reporter",
     "description": "Report an issue with a plugin to its GitHub repository, from the WordPress dashboard.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
