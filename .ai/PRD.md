@@ -29,7 +29,7 @@ I run my own plugins on my own sites. When one misbehaves I notice it in the das
 | The Environment box holds exactly what is sent | The plugin's own line is put into the box when a plugin is chosen, so nothing is added out of sight on the server. |
 | A personal access token, not "Sign in with GitHub" | One user, own repositories. OAuth needs a registered app and a callback, which only a public release justifies. |
 | The report's text is not stored | It is on GitHub. Storing it again would put support conversations into the options table. |
-| No abilities (AI agents, MCP) yet | My other plugins expose read-only abilities. Here the only useful ability would write to GitHub, and that should stay a human's click for now. |
+| Abilities for AI agents and MCP, including one that writes | First left out because the only useful ability writes to GitHub. Added on 2026-10-16 so an agent can report for me through REST or MCP instead of running code on the site. Each ability runs the REST route the form uses, as the person logged in, so it checks and sends exactly what the form would. |
 
 ## Left out on purpose
 
