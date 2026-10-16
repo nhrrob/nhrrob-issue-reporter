@@ -5,7 +5,7 @@
  * Description: Report an issue with a plugin to its GitHub repository, without leaving the dashboard.
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/
- * Version: 0.1.0
+ * Version: 0.2.0
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Text Domain: nhrrob-issue-reporter
@@ -31,7 +31,7 @@ final class NHRRob_Issue_Reporter {
 	 *
 	 * @var string
 	 */
-	const VERSION = '0.1.0';
+	const VERSION = '0.2.0';
 
 	/**
 	 * Class constructor
@@ -60,14 +60,15 @@ final class NHRRob_Issue_Reporter {
 	}
 
 	/**
-	 * Initialize the plugin. Everything it does happens in the dashboard, or
-	 * in a REST request the dashboard app makes.
+	 * Initialize the plugin. Everything it does happens in the dashboard, in
+	 * a REST request the dashboard app makes, or when an ability is run.
 	 *
 	 * @return void
 	 */
 	public function init_plugin(): void {
 		add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
 		( new \NHRRob\IssueReporter\Rest() )->init();
+		( new \NHRRob\IssueReporter\Abilities() )->init();
 
 		if ( is_admin() ) {
 			( new \NHRRob\IssueReporter\Admin() )->init();

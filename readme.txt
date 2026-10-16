@@ -4,7 +4,7 @@ Tags: github, issues, bug report, support, developer
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,11 +31,20 @@ A plugin's repository is read from its header: `GitHub Plugin URI`, or a `Plugin
 
 Only users who can activate plugins can report an issue or change the settings.
 
-== External services ==
-This plugin connects to the GitHub API (api.github.com), a service of GitHub, Inc. It does so only when a user who can activate plugins:
+### For AI agents and MCP clients
+On WordPress 6.9 and later the plugin registers three abilities, so an AI agent can report an issue for you through the Abilities API's REST routes (`/wp-json/wp-abilities/v1/`) or through the MCP Adapter plugin:
 
-- types a title in the report form: the title is sent to search for similar open issues in the chosen plugin's repository;
-- sends the report form: the title, the text typed in the form and the environment details shown in the form are sent to open the issue;
+- `nhrrob-issue-reporter/get-state`: the plugins with their repository, whether a token is set, the environment text and the sent reports. Makes no request to GitHub.
+- `nhrrob-issue-reporter/find-similar-issues`: open issues with a similar title.
+- `nhrrob-issue-reporter/report-issue`: opens the issue.
+
+Each runs the same code as the form, behind the same capability, as the person who is logged in, for example with an application password. The token is never part of an answer.
+
+== External services ==
+This plugin connects to the GitHub API (api.github.com), a service of GitHub, Inc. It does so only when a user who can activate plugins, in the form or through an ability run as them:
+
+- types a title in the report form, or runs `find-similar-issues`: the title is sent to search for similar open issues in the chosen plugin's repository;
+- sends the report form, or runs `report-issue`: the title, the text typed in the form and the environment details shown in the form are sent to open the issue;
 - opens the Sent tab: the repository and number of each open issue are sent to ask whether it is still open.
 
 Every request carries the GitHub token you configured. Nothing is sent on the front end, in the background or for visitors.
@@ -55,6 +64,9 @@ In `wp-config.php` if you define `NHRROB_ISSUE_REPORTER_TOKEN` there, which is t
 Its three options: the settings, the stored token and the list of sent reports. Issues on GitHub are not touched.
 
 == Changelog ==
+
+= 0.2.0 =
+* Abilities for AI agents and MCP clients: get-state, find-similar-issues and report-issue.
 
 = 0.1.0 =
 * First version: the report form, repository detection and settings, the similar-issue check and the list of sent reports.
