@@ -9,7 +9,15 @@ on:
     branches:
       - main
       - trunk
+    # Text has nothing to check. readme.txt is not Markdown, so it is still checked.
+    paths-ignore: [ "**.md" ]
   workflow_dispatch:
+
+# GitHub bills each of the nine jobs by the minute, so a new push to the pull
+# request cancels the run still going.
+concurrency:
+  group: php-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   phpcs:
