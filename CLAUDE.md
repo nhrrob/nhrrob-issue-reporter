@@ -32,6 +32,7 @@ admin/src/         React source: index.js, app.js, api.js, components/ (AppShell
 admin/build/       compiled output (committed, ships)
 tests/             PHPUnit + WP_Mock
 .github/workflows/php.yml   PHPCS, then per PHP version: syntax, unit tests, smoke test
+.github/workflows/release.yml  when Version changes on main: tag v<version> and a GitHub release with readme.txt's changelog
 .github/ci/smoke.php        calls every GET route inside a real WordPress, fails on any PHP notice
 ```
 
@@ -84,3 +85,7 @@ The codebase is PHPCS-clean, so any new violation is yours; fix it rather than w
 ## Trying it locally
 
 The dev copy is in `~/Sites/nhrrob-dev/wp-content/plugins/`. To try the app without touching GitHub, answer its requests with a temporary `pre_http_request` filter in a mu-plugin and delete it afterwards. A real report is best sent to this plugin's own private repository.
+
+## Releases
+
+Raise `Version` in the header (and the class constant) and `Stable tag`, and add a `= x.y.z =` section under `== Changelog ==` in `readme.txt`. Merging that into `main` runs `release.yml`, which tags `v<version>` and makes the GitHub release. The blog (`nhrrob/nazmulrobin_blog`) requires the plugin by these tags with Composer, so a release reaches it in Dependabot's next pull request.
