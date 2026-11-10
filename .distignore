@@ -76,3 +76,4 @@ tests
 postcss.config.js
 .wordpress-org
 .husky
+docs/

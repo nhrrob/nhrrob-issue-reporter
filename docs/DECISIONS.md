@@ -1,0 +1,30 @@
+# Decisions
+
+Why the tools, checks, dependencies and rules of this plugin are the way they
+are, and what undoing each would take. Newest row last. A pull request that
+adds a tool, script, check, dependency or rule adds a row; one that reverses
+a decision strikes the old row and adds a new one, never deletes it. Where a
+reason was never written down, the row says so.
+
+| Date | Decision | Why | Can it be undone? |
+| --- | --- | --- | --- |
+| 2026-10-11 | A personal access token, not "Sign in with GitHub" | One user, own repositories. OAuth needs a registered app and a callback, which only a public release justifies. | Yes. Add an OAuth flow beside the token in `Settings`; `GitHub::request()` already reads the token from one place. |
+| 2026-10-11 | The token from `NHRROB_ISSUE_REPORTER_TOKEN` in `wp-config.php` first, the database second | Keeps the secret out of the database and out of backups. | Yes. One method, `Settings::token()`. |
+| 2026-10-11 | `GitHub::request()` is the only place that makes an HTTP request, and only to api.github.com | The token can then go nowhere else, and that is checked in one place. | Not without weakening rule 2 in `CLAUDE.md`. |
+| 2026-10-11 | The repository is read from a plugin's header or typed in Settings, never guessed from `readme.txt` | A readme links to many repositories (libraries, credits); a wrong guess files a bug in a stranger's repository. | Yes, but the risk comes back. |
+| 2026-10-11 | The text of a report is not stored, only its link and state (`nhrrob_issue_reporter_reports`, 100 rows) | It is on GitHub. Storing it again puts support conversations into the options table. | Yes. Add fields to `Reports::add()`; old rows stay without them. |
+| 2026-10-11 | Three options, none autoloaded, no database tables | Small data, read only on the plugin's own screen. | Yes. A migration would copy the options into a table. |
+| 2026-10-11 | The screen is a React app built with `@wordpress/scripts`, no component or icon library, `admin/build/` committed | Same shell and look as the other nhrrob plugins (see `.ai/DESIGN.md`); the build ships without a build step on the server. | Yes, but every screen would be rewritten. |
+| 2026-10-11 | `vendor/` holds the production (`--no-dev`) autoloader, committed | The plugin runs straight from a git clone, as the blog installs it with Composer, without running Composer inside it. | Yes. Drop it from git and require a `composer install --no-dev` wherever it is installed. |
+| 2026-10-11 | PHPCS with WordPress Coding Standards and PHPCompatibilityWP, PHPUnit with WP_Mock, a Husky pre-commit hook running lint, PHPCS and the tests | Reason not recorded beyond matching the other nhrrob plugins. What still holds: the tests need no database or network, so they run in seconds before every commit. | Yes. Remove `.husky/` and the dev dependencies in `composer.json`. |
+| 2026-10-11 | `composer.json` pins `config.platform.php` to 7.4.33 | Dev dependencies resolve to versions that run on every supported PHP, 7.4 and later. | Yes, when "Requires PHP" goes up. Change both together. |
+| 2026-10-11 | `typescript` pinned to `~6.0` in `package.json` | The lint plugin does not load with TypeScript 7. | Yes, once `@wordpress/scripts` supports 7. |
+| 2026-10-16 | Abilities for AI agents and MCP, each running the REST route the form uses | An agent can report through REST or MCP instead of running code on the site, and it is checked exactly like the form. | Yes. Remove `Abilities.php` and its line in the main file; the form is untouched. |
+| 2026-10-29 | CI "PHP Compatibility" per PHP version 7.4 to 8.5 (8.6 not blocking): syntax, unit tests and a smoke test in a real WordPress; skipped for Markdown-only pull requests, older runs cancelled | Lint and unit tests do not run the plugin inside WordPress, so a PHP version could pass both and still fail at runtime. The skip and the cancelling save billed minutes. | Yes. One workflow file, `.github/workflows/php.yml`. |
+| 2026-11-01 | `release.yml` tags `v<version>` and makes a GitHub release when `Version` changes on `main` | The blog installs the plugin from these tags with Composer. | Yes, but releases would then be tagged by hand. |
+| 2026-11-10 | Report text is sent as typed, without stripping tags (#11) | Bug reports quote code with angle brackets, and GitHub sanitizes the issue's HTML itself. The plugin never prints the text. | Yes. `Rest::text()` is the one place. |
+| 2026-11-10 | Similar issues: the title's meaningful words joined with OR, ranked by shared words (#9) | Every word had to match, so the list almost never found anything. | Yes. `GitHub::similar()` and `GitHub::words()`. |
+| 2026-11-10 | Themes, must-use plugins and other repositories are targets, keyed `theme:`, `mu:` and `repo:` (#6); a new repository is checked with GitHub when saved | Reports were limited to plugins. The keys keep one map for every target, so the abilities' `plugin` field still works. | Partly. Removing a target type leaves its saved rows unused; they are dropped on the next save. |
+| 2026-11-10 | Comments on an existing issue, from the form, the Sent tab and an ability (#12) | Follow-ups had to be added with the GitHub CLI, and the similar list could only point at GitHub. | Yes. One route, one ability, two buttons. |
+| 2026-11-10 | Screenshots are uploaded to the media library and linked, only after a tick that the link shows the site's address (#5) | GitHub's API cannot attach an image. Committing images would need "Contents: write" on the token. The address was never sent before, so it is the person's choice each time, and the server refuses screenshots without it. | Yes. Images already linked stay in the media library and in the issues. |
+| 2026-11-10 | This decision log (#13) | The reason for a choice was often only in an old chat; git history says what changed, not why. | Yes. |
