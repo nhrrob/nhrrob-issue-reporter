@@ -123,6 +123,8 @@ class Abilities {
 						],
 					],
 					'additionalProperties' => false,
+					// Run without input, as before the filter existed.
+					'default'              => [],
 				],
 				'output_schema'       => [ 'type' => 'object' ],
 				'execute_callback'    => [ $this, 'get_state' ],

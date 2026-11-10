@@ -352,7 +352,7 @@ function RepoRow( { plugin, onSave } ) {
 				<label htmlFor={ id }>{ plugin.name }</label>
 				<div className={ P + 'sub' }>
 					{ GROUPS.find( ( g ) => g[ 0 ] === plugin.type )[ 1 ] }
-					{ ' · ' + plugin.version }
+					{ plugin.version && ' · ' + plugin.version }
 				</div>
 			</td>
 			<td>

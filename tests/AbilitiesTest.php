@@ -85,6 +85,7 @@ class AbilitiesTest extends TestCase {
 
 		$this->assertSame( [ 'repo' ], array_keys( $input['properties'] ) );
 		$this->assertArrayNotHasKey( 'required', $input );
+		$this->assertSame( [], $input['default'] );
 	}
 
 	public function testASearchNeedsAPluginAndATitle() {

@@ -642,6 +642,8 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 	}
 
 	&__number {
+		flex: none;
+		white-space: nowrap;
 		font-family: var(--ir-mono);
 		font-size: 12.5px;
 		color: var(--ir-muted);
@@ -846,6 +848,11 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 
 	> .#{$p}-field {
 		flex: 1 1 220px;
+
+		.#{$p}-input {
+			flex: none;
+			width: 100%;
+		}
 	}
 }
 
