@@ -31,6 +31,7 @@ class AbilitiesTest extends TestCase {
 				'nhrrob-issue-reporter/get-state',
 				'nhrrob-issue-reporter/find-similar-issues',
 				'nhrrob-issue-reporter/report-issue',
+				'nhrrob-issue-reporter/comment-on-issue',
 			],
 			array_keys( $this->definitions() )
 		);
@@ -42,13 +43,25 @@ class AbilitiesTest extends TestCase {
 		}
 	}
 
-	public function testOnlyReportIssueWrites() {
+	public function testOnlyReportingAndCommentingWrite() {
+		$writes = [ 'nhrrob-issue-reporter/report-issue', 'nhrrob-issue-reporter/comment-on-issue' ];
+
 		foreach ( $this->definitions() as $name => $args ) {
-			$this->assertSame( 'nhrrob-issue-reporter/report-issue' !== $name, $args['meta']['annotations']['readonly'], $name );
+			$this->assertSame( ! in_array( $name, $writes, true ), $args['meta']['annotations']['readonly'], $name );
 			$this->assertFalse( $args['meta']['annotations']['destructive'], $name );
 		}
 
-		$this->assertFalse( $this->definitions()['nhrrob-issue-reporter/report-issue']['meta']['annotations']['idempotent'] );
+		foreach ( $writes as $name ) {
+			$this->assertFalse( $this->definitions()[ $name ]['meta']['annotations']['idempotent'], $name );
+		}
+	}
+
+	public function testACommentNeedsAPluginANumberAndText() {
+		$input = $this->definitions()['nhrrob-issue-reporter/comment-on-issue']['input_schema'];
+
+		$this->assertSame( [ 'plugin', 'number', 'body' ], $input['required'] );
+		$this->assertSame( [ 'plugin', 'number', 'body' ], array_keys( $input['properties'] ) );
+		$this->assertFalse( $input['additionalProperties'] );
 	}
 
 	public function testEachIsOfferedOverRestAndMcp() {

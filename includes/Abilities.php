@@ -164,6 +164,32 @@ class Abilities {
 				'permission_callback' => $gate,
 				'meta'                => $meta( false, false ),
 			],
+			'nhrrob-issue-reporter/comment-on-issue'    => [
+				'label'               => __( 'Comment on an issue', 'nhrrob-issue-reporter' ),
+				'description'         => __( 'Adds a comment to an issue in the plugin\'s GitHub repository, such as a similar issue found with find-similar-issues or a report sent before. The repository may be public: show the person the full text first.', 'nhrrob-issue-reporter' ),
+				'category'            => self::CATEGORY,
+				'input_schema'        => [
+					'type'                 => 'object',
+					'properties'           => [
+						'plugin' => $plugin,
+						'number' => [
+							'type'        => 'integer',
+							'minimum'     => 1,
+							'description' => __( 'The issue number in that repository.', 'nhrrob-issue-reporter' ),
+						],
+						'body'   => [
+							'type'        => 'string',
+							'description' => __( 'The comment, in Markdown.', 'nhrrob-issue-reporter' ),
+						],
+					],
+					'required'             => [ 'plugin', 'number', 'body' ],
+					'additionalProperties' => false,
+				],
+				'output_schema'       => [ 'type' => 'object' ],
+				'execute_callback'    => [ $this, 'comment_on_issue' ],
+				'permission_callback' => $gate,
+				'meta'                => $meta( false, false ),
+			],
 		];
 	}
 
@@ -202,6 +228,16 @@ class Abilities {
 	 */
 	public function report_issue( $input ) {
 		return ( new Rest() )->send( $this->request( $input ) );
+	}
+
+	/**
+	 * Comment on an issue.
+	 *
+	 * @param array $input `plugin`, `number`, `body`.
+	 * @return array|\WP_Error
+	 */
+	public function comment_on_issue( $input ) {
+		return ( new Rest() )->comment( $this->request( $input ) );
 	}
 
 	/**

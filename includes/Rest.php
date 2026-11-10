@@ -84,6 +84,16 @@ class Rest {
 				],
 			]
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/comments',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'comment' ],
+				'permission_callback' => $gate,
+			]
+		);
 	}
 
 	/**
@@ -274,6 +284,47 @@ class Rest {
 		return [
 			'report'  => $reports[0],
 			'reports' => $reports,
+		];
+	}
+
+	/**
+	 * Comment on an open issue in the repository of a plugin, theme or other
+	 * repository. The address is built from that repository, so the comment
+	 * cannot land anywhere else.
+	 *
+	 * @param \WP_REST_Request $request Request: `plugin` (key), `number`, and `body`, or `what`,
+	 *                                  `steps` and `environment` as in a report.
+	 * @return array|\WP_Error `url` of the comment and `reports`.
+	 */
+	public function comment( $request ) {
+		$plugin = $this->plugin( $request->get_param( 'plugin' ) );
+
+		if ( is_wp_error( $plugin ) ) {
+			return $plugin;
+		}
+
+		$number = filter_var( $request->get_param( 'number' ), FILTER_VALIDATE_INT, [ 'options' => [ 'min_range' => 1 ] ] );
+		$body   = self::text( $request->get_param( 'body' ) );
+
+		if ( '' === $body ) {
+			$body = GitHub::body( self::text( $request->get_param( 'what' ) ), self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ) );
+		}
+
+		if ( false === $number || '' === $body ) {
+			return new \WP_Error( 'nhrrob_issue_reporter_incomplete', __( 'An issue number and the text of the comment are needed.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
+		}
+
+		$comment = GitHub::comment( $plugin['repo'], $number, $body );
+
+		if ( is_wp_error( $comment ) ) {
+			return $this->refused( $comment );
+		}
+
+		Reports::commented( $plugin['repo'], $number );
+
+		return [
+			'url'     => $comment['url'],
+			'reports' => Reports::all(),
 		];
 	}
 

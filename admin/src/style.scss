@@ -891,3 +891,20 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 		min-width: 220px;
 	}
 }
+
+/* ---- Comments ---- */
+.#{$p}-similar li {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+.#{$p}-grid .#{$p}-sub {
+	display: block;
+}
+
+.#{$p}-grid__extra td {
+	background: var(--ir-sunken);
+	white-space: normal;
+}

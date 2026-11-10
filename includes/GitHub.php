@@ -139,6 +139,24 @@ class GitHub {
 	}
 
 	/**
+	 * Add a comment to an issue.
+	 *
+	 * @param string $repo   Repository, "owner/name".
+	 * @param int    $number Issue number.
+	 * @param string $body   Comment, in Markdown.
+	 * @return array|\WP_Error The comment's `url`.
+	 */
+	public static function comment( $repo, $number, $body ) {
+		$data = self::request( 'POST', '/repos/' . $repo . '/issues/' . (int) $number . '/comments', [ 'body' => $body ] );
+
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+
+		return isset( $data['html_url'] ) ? [ 'url' => (string) $data['html_url'] ] : self::error( 0 );
+	}
+
+	/**
 	 * Whether the token can see a repository, asked when one is saved.
 	 *
 	 * @param string $repo Repository, "owner/name".

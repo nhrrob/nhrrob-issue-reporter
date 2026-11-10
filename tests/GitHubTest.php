@@ -146,6 +146,21 @@ class GitHubTest extends TestCase {
 		$this->assertSame( "### What happened\n\nIt broke.\n\n### Environment\n\n- PHP: 8.2", GitHub::body( " It broke.\n", '  ', '- PHP: 8.2' ) );
 	}
 
+	public function testACommentGoesToTheIssueInTheGivenRepository() {
+		$this->token( 'secret' );
+		$this->answer( 201, '{"html_url":"https://github.com/a/b/issues/7#issuecomment-1"}' );
+		WP_Mock::userFunction( 'wp_remote_request' )->once()->andReturnUsing(
+			function ( $url, $args ) {
+				$this->assertSame( 'https://api.github.com/repos/a/b/issues/7/comments', $url );
+				$this->assertSame( 'POST', $args['method'] );
+				$this->assertSame( [ 'body' => 'More <b>' ], json_decode( $args['body'], true ) );
+				return [];
+			}
+		);
+
+		$this->assertSame( [ 'url' => 'https://github.com/a/b/issues/7#issuecomment-1' ], GitHub::comment( 'a/b', '7/../../c/d', 'More <b>' ) );
+	}
+
 	public function testAStateOtherThanOpenOrClosedIsUnknown() {
 		$this->token( 'secret' );
 		$this->answer( 200, '{"state":"weird"}' );

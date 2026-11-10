@@ -26,7 +26,8 @@ class Reports {
 	/**
 	 * All rows, newest first.
 	 *
-	 * @return array Rows of `plugin`, `repo`, `number`, `url`, `title`, `time`, `state` and `checked`.
+	 * @return array Rows of `plugin`, `repo`, `number`, `url`, `title`, `time`, `state`, `checked`
+	 *               and `comments` (added from this site, once there is one).
 	 */
 	public static function all() {
 		$rows = get_option( self::OPTION, [] );
@@ -61,6 +62,25 @@ class Reports {
 		);
 
 		update_option( self::OPTION, array_slice( $rows, 0, self::MAX ), false );
+	}
+
+	/**
+	 * Count a comment added to a sent report, when the issue is one.
+	 *
+	 * @param string $repo   Repository, "owner/name".
+	 * @param int    $number Issue number.
+	 * @return void
+	 */
+	public static function commented( $repo, $number ) {
+		$rows = self::all();
+
+		foreach ( $rows as $index => $row ) {
+			if ( $row['repo'] === $repo && (int) $row['number'] === (int) $number ) {
+				$rows[ $index ]['comments'] = ( isset( $row['comments'] ) ? (int) $row['comments'] : 0 ) + 1;
+				update_option( self::OPTION, $rows, false );
+				return;
+			}
+		}
 	}
 
 	/**

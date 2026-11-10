@@ -47,6 +47,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 	const [ similar, setSimilar ] = useState( null );
 	const [ searching, setSearching ] = useState( false );
 	const [ sending, setSending ] = useState( false );
+	const [ commenting, setCommenting ] = useState( 0 );
 
 	const plugin = plugins.find( ( p ) => p.file === file );
 	const ready = data.hasToken && plugins.length > 0;
@@ -112,6 +113,43 @@ export default function Report( { boot, data, setData, navigate } ) {
 				toast( e.message || String( e ), 'error' );
 				setSending( false );
 			} );
+	};
+
+	// The typed text and environment go to an existing issue instead.
+	const comment = ( number ) => {
+		if ( ! what.trim() ) {
+			toast(
+				__(
+					'Type what happened first: it becomes the comment.',
+					'nhrrob-issue-reporter'
+				),
+				'error'
+			);
+			return;
+		}
+		setCommenting( number );
+		api( '/comments', 'POST', {
+			plugin: file,
+			number,
+			what,
+			steps,
+			environment,
+		} )
+			.then( ( answer ) => {
+				setData( { ...data, reports: answer.reports } );
+				toast(
+					sprintf(
+						/* translators: %d: issue number. */
+						__(
+							'Comment added to issue #%d',
+							'nhrrob-issue-reporter'
+						),
+						number
+					)
+				);
+			} )
+			.catch( ( e ) => toast( e.message || String( e ), 'error' ) )
+			.finally( () => setCommenting( 0 ) );
 	};
 
 	return (
@@ -353,7 +391,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 						{ similar === null && (
 							<p className={ P + 'muted' }>
 								{ __(
-									'Choose a plugin and type a title. Open issues with a similar title show up here, so you can comment on one instead of opening another.',
+									'Choose a plugin and type a title. Open issues with a similar title show up here, so you can add your text to one as a comment instead of opening another.',
 									'nhrrob-issue-reporter'
 								) }
 							</p>
@@ -381,6 +419,26 @@ export default function Report( { boot, data, setData, navigate } ) {
 											</span>
 											{ issue.title }
 										</External>
+										<Button
+											small
+											variant="soft"
+											disabled={
+												!! commenting || sending
+											}
+											onClick={ () =>
+												comment( issue.number )
+											}
+										>
+											{ commenting === issue.number
+												? __(
+														'Sending…',
+														'nhrrob-issue-reporter'
+												  )
+												: __(
+														'Add as comment',
+														'nhrrob-issue-reporter'
+												  ) }
+										</Button>
 									</li>
 								) ) }
 							</ul>
