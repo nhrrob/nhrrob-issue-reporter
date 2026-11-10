@@ -95,6 +95,19 @@ class Abilities {
 			'type'        => 'string',
 			'description' => __( 'A short title of the issue.', 'nhrrob-issue-reporter' ),
 		];
+		$images = [
+			'type'        => 'array',
+			'items'       => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
+			'maxItems'    => Screenshots::MAX_FILES,
+			'description' => __( 'Optional: ids of images in the media library, linked from the issue. The links show the site\'s address, so they need allowSiteAddress.', 'nhrrob-issue-reporter' ),
+		];
+		$allow  = [
+			'type'        => 'boolean',
+			'description' => __( 'True when the person agreed that the screenshot links show the site\'s address. Ask them first.', 'nhrrob-issue-reporter' ),
+		];
 
 		return [
 			'nhrrob-issue-reporter/get-state'           => [
@@ -141,20 +154,22 @@ class Abilities {
 				'input_schema'        => [
 					'type'                 => 'object',
 					'properties'           => [
-						'plugin'      => $plugin,
-						'title'       => $title,
-						'what'        => [
+						'plugin'           => $plugin,
+						'title'            => $title,
+						'what'             => [
 							'type'        => 'string',
 							'description' => __( 'What happened, and what was expected instead.', 'nhrrob-issue-reporter' ),
 						],
-						'steps'       => [
+						'steps'            => [
 							'type'        => 'string',
 							'description' => __( 'Steps to see it happen.', 'nhrrob-issue-reporter' ),
 						],
-						'environment' => [
+						'environment'      => [
 							'type'        => 'string',
 							'description' => __( 'The environment text from get-state.', 'nhrrob-issue-reporter' ),
 						],
+						'screenshots'      => $images,
+						'allowSiteAddress' => $allow,
 					],
 					'required'             => [ 'plugin', 'title', 'what' ],
 					'additionalProperties' => false,
@@ -171,16 +186,18 @@ class Abilities {
 				'input_schema'        => [
 					'type'                 => 'object',
 					'properties'           => [
-						'plugin' => $plugin,
-						'number' => [
+						'plugin'           => $plugin,
+						'number'           => [
 							'type'        => 'integer',
 							'minimum'     => 1,
 							'description' => __( 'The issue number in that repository.', 'nhrrob-issue-reporter' ),
 						],
-						'body'   => [
+						'body'             => [
 							'type'        => 'string',
 							'description' => __( 'The comment, in Markdown.', 'nhrrob-issue-reporter' ),
 						],
+						'screenshots'      => $images,
+						'allowSiteAddress' => $allow,
 					],
 					'required'             => [ 'plugin', 'number', 'body' ],
 					'additionalProperties' => false,

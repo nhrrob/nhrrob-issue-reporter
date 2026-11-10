@@ -87,6 +87,16 @@ class Rest {
 
 		register_rest_route(
 			self::REST_NAMESPACE,
+			'/screenshots',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'screenshot' ],
+				'permission_callback' => $gate,
+			]
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
 			'/comments',
 			[
 				'methods'             => 'POST',
@@ -111,6 +121,7 @@ class Rest {
 
 		return [
 			'plugins'       => $list,
+			'publicSite'    => Screenshots::site_is_public(),
 			'hasToken'      => '' !== Settings::token(),
 			'tokenInConfig' => Settings::token_is_constant(),
 			'environment'   => Environment::text( $plugins ),
@@ -250,7 +261,8 @@ class Rest {
 	/**
 	 * Send a report.
 	 *
-	 * @param \WP_REST_Request $request Request: `plugin` (file), `title`, `what`, `steps`, `environment`.
+	 * @param \WP_REST_Request $request Request: `plugin` (key), `title`, `what`, `steps`, `environment`,
+	 *                                  and optionally `screenshots` (attachment ids) with `allowSiteAddress`.
 	 * @return array|\WP_Error `report` (the new row) and `reports`.
 	 */
 	public function send( $request ) {
@@ -267,10 +279,16 @@ class Rest {
 			return new \WP_Error( 'nhrrob_issue_reporter_incomplete', __( 'A title and a description of what happened are needed.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
 		}
 
+		$images = $this->screenshots( $request );
+
+		if ( is_wp_error( $images ) ) {
+			return $images;
+		}
+
 		$issue = GitHub::create(
 			$plugin['repo'],
 			$title,
-			GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ) )
+			GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images )
 		);
 
 		if ( is_wp_error( $issue ) ) {
@@ -288,12 +306,45 @@ class Rest {
 	}
 
 	/**
+	 * Upload one screenshot to the media library, before a report is sent.
+	 *
+	 * @param \WP_REST_Request $request Request with the image as the file `file`.
+	 * @return array|\WP_Error `id` and `url`.
+	 */
+	public function screenshot( $request ) {
+		$files = $request->get_file_params();
+
+		return Screenshots::upload( isset( $files['file'] ) ? $files['file'] : null );
+	}
+
+	/**
+	 * The screenshots a report or comment links to, once the person agreed
+	 * that the links show the site's address.
+	 *
+	 * @param \WP_REST_Request $request Request: `screenshots` (attachment ids) and `allowSiteAddress`.
+	 * @return string|\WP_Error Markdown, empty without screenshots.
+	 */
+	private function screenshots( $request ) {
+		$ids = $request->get_param( 'screenshots' );
+
+		if ( empty( $ids ) ) {
+			return '';
+		}
+
+		if ( true !== $request->get_param( 'allowSiteAddress' ) ) {
+			return new \WP_Error( 'nhrrob_issue_reporter_address', __( 'The links to screenshots show this site\'s address. Agree to that before sending.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
+		}
+
+		return Screenshots::markdown( $ids );
+	}
+
+	/**
 	 * Comment on an open issue in the repository of a plugin, theme or other
 	 * repository. The address is built from that repository, so the comment
 	 * cannot land anywhere else.
 	 *
 	 * @param \WP_REST_Request $request Request: `plugin` (key), `number`, and `body`, or `what`,
-	 *                                  `steps` and `environment` as in a report.
+	 *                                  `steps` and `environment` as in a report; `screenshots` as in a report.
 	 * @return array|\WP_Error `url` of the comment and `reports`.
 	 */
 	public function comment( $request ) {
@@ -303,11 +354,19 @@ class Rest {
 			return $plugin;
 		}
 
+		$images = $this->screenshots( $request );
+
+		if ( is_wp_error( $images ) ) {
+			return $images;
+		}
+
 		$number = filter_var( $request->get_param( 'number' ), FILTER_VALIDATE_INT, [ 'options' => [ 'min_range' => 1 ] ] );
 		$body   = self::text( $request->get_param( 'body' ) );
 
 		if ( '' === $body ) {
-			$body = GitHub::body( self::text( $request->get_param( 'what' ) ), self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ) );
+			$body = GitHub::body( self::text( $request->get_param( 'what' ) ), self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images );
+		} elseif ( '' !== $images ) {
+			$body .= "\n\n" . $images;
 		}
 
 		if ( false === $number || '' === $body ) {

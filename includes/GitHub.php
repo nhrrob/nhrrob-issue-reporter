@@ -192,13 +192,15 @@ class GitHub {
 	 * @param string $what        What happened.
 	 * @param string $steps       Steps to reproduce.
 	 * @param string $environment Details about the site.
+	 * @param string $screenshots Images, in Markdown.
 	 * @return string
 	 */
-	public static function body( $what, $steps, $environment ) {
+	public static function body( $what, $steps, $environment, $screenshots = '' ) {
 		$parts    = [];
 		$sections = [
 			'What happened'      => $what,
 			'Steps to reproduce' => $steps,
+			'Screenshots'        => $screenshots,
 			'Environment'        => $environment,
 		];
 

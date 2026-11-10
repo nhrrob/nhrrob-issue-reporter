@@ -60,7 +60,7 @@ class AbilitiesTest extends TestCase {
 		$input = $this->definitions()['nhrrob-issue-reporter/comment-on-issue']['input_schema'];
 
 		$this->assertSame( [ 'plugin', 'number', 'body' ], $input['required'] );
-		$this->assertSame( [ 'plugin', 'number', 'body' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'plugin', 'number', 'body', 'screenshots', 'allowSiteAddress' ], array_keys( $input['properties'] ) );
 		$this->assertFalse( $input['additionalProperties'] );
 	}
 
@@ -75,7 +75,7 @@ class AbilitiesTest extends TestCase {
 	public function testAReportTakesTheFieldsOfTheFormOnly() {
 		$input = $this->definitions()['nhrrob-issue-reporter/report-issue']['input_schema'];
 
-		$this->assertSame( [ 'plugin', 'title', 'what', 'steps', 'environment' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'plugin', 'title', 'what', 'steps', 'environment', 'screenshots', 'allowSiteAddress' ], array_keys( $input['properties'] ) );
 		$this->assertSame( [ 'plugin', 'title', 'what' ], $input['required'] );
 		$this->assertFalse( $input['additionalProperties'] );
 	}
