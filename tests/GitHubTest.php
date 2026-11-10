@@ -161,6 +161,10 @@ class GitHubTest extends TestCase {
 		$this->assertSame( [ 'url' => 'https://github.com/a/b/issues/7#issuecomment-1' ], GitHub::comment( 'a/b', '7/../../c/d', 'More <b>' ) );
 	}
 
+	public function testScreenshotsComeBeforeTheEnvironment() {
+		$this->assertSame( "### What happened\n\nIt broke.\n\n### Screenshots\n\n![Screenshot 1](u)\n\n### Environment\n\n- PHP: 8.2", GitHub::body( 'It broke.', '', '- PHP: 8.2', '![Screenshot 1](u)' ) );
+	}
+
 	public function testAStateOtherThanOpenOrClosedIsUnknown() {
 		$this->token( 'secret' );
 		$this->answer( 200, '{"state":"weird"}' );

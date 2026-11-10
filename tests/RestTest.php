@@ -106,6 +106,17 @@ class RestTest extends TestCase {
 		];
 	}
 
+	public function testScreenshotsAreNotSentUnlessTheSiteAddressMayBeShown() {
+		$this->site();
+		WP_Mock::userFunction( 'wp_remote_request' )->never();
+
+		$params = [ 'plugin' => 'p/p.php', 'title' => 'Title', 'what' => 'It broke.', 'screenshots' => [ 4 ] ];
+
+		$this->assertInstanceOf( \WP_Error::class, ( new Rest() )->send( $this->request( $params ) ) );
+		$this->assertInstanceOf( \WP_Error::class, ( new Rest() )->send( $this->request( $params + [ 'allowSiteAddress' => 'yes' ] ) ) );
+		$this->assertInstanceOf( \WP_Error::class, ( new Rest() )->comment( $this->request( [ 'number' => 7, 'body' => 'x' ] + $params ) ) );
+	}
+
 	public function testANonScalarIsEmpty() {
 		$this->assertSame( '', Rest::text( [ 'x' ] ) );
 	}

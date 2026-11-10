@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
+import apiFetch from '@wordpress/api-fetch';
+
 import api from '../api';
 import { useToast } from '../components/ToastProvider';
 import {
@@ -17,6 +19,9 @@ import {
 } from '../components/ui';
 
 const P = 'nhrrob-issue-reporter-';
+const TYPES = [ 'image/png', 'image/jpeg', 'image/webp', 'image/gif' ];
+const MAX_FILES = 5;
+const MAX_BYTES = 5 * 1024 * 1024;
 
 // The line about what is reported, at the top of the Environment box. Sent
 // as is, so it is not translated, like the rest of the environment text.
@@ -48,6 +53,9 @@ export default function Report( { boot, data, setData, navigate } ) {
 	const [ searching, setSearching ] = useState( false );
 	const [ sending, setSending ] = useState( false );
 	const [ commenting, setCommenting ] = useState( 0 );
+	// Screenshots: { file, preview, id } where id is set once uploaded.
+	const [ images, setImages ] = useState( [] );
+	const [ allowAddress, setAllowAddress ] = useState( false );
 
 	const plugin = plugins.find( ( p ) => p.file === file );
 	const ready = data.hasToken && plugins.length > 0;
@@ -84,16 +92,86 @@ export default function Report( { boot, data, setData, navigate } ) {
 		[ data.hasToken ]
 	);
 
+	const addImages = ( files ) => {
+		const picked = Array.from( files || [] ).filter( ( f ) =>
+			TYPES.includes( f.type )
+		);
+		if ( picked.some( ( f ) => f.size > MAX_BYTES ) ) {
+			toast(
+				__(
+					'A screenshot can be at most 5 MB.',
+					'nhrrob-issue-reporter'
+				),
+				'error'
+			);
+		}
+		setImages( ( current ) =>
+			[
+				...current,
+				...picked
+					.filter( ( f ) => f.size <= MAX_BYTES )
+					.map( ( f ) => ( {
+						file: f,
+						preview: window.URL.createObjectURL( f ),
+						id: 0,
+					} ) ),
+			].slice( 0, MAX_FILES )
+		);
+	};
+
+	const removeImage = ( image ) => {
+		window.URL.revokeObjectURL( image.preview );
+		setImages( ( current ) => current.filter( ( i ) => i !== image ) );
+	};
+
+	// Uploaded one by one when the report is sent, so a draft that is left
+	// behind adds nothing to the media library. An image uploaded before a
+	// failed send keeps its id and is not uploaded again.
+	const upload = () =>
+		images.reduce(
+			( chain, image ) =>
+				chain.then( ( ids ) => {
+					if ( image.id ) {
+						return [ ...ids, image.id ];
+					}
+					const body = new window.FormData();
+					body.append( 'file', image.file, image.file.name );
+					return apiFetch( {
+						path: 'nhrrob-issue-reporter/v1/screenshots',
+						method: 'POST',
+						body,
+					} ).then( ( answer ) => {
+						image.id = answer.id;
+						return [ ...ids, answer.id ];
+					} );
+				} ),
+			Promise.resolve( [] )
+		);
+
+	const withImages = ( fields ) =>
+		upload().then( ( ids ) =>
+			ids.length
+				? {
+						...fields,
+						screenshots: ids,
+						allowSiteAddress: allowAddress,
+				  }
+				: fields
+		);
+
+	const blocked = images.length > 0 && ! allowAddress;
+
 	const send = ( event ) => {
 		event.preventDefault();
 		setSending( true );
-		api( '/reports', 'POST', {
+		withImages( {
 			plugin: file,
 			title,
 			what,
 			steps,
 			environment,
 		} )
+			.then( ( fields ) => api( '/reports', 'POST', fields ) )
 			.then( ( answer ) => {
 				setData( { ...data, reports: answer.reports } );
 				toast(
@@ -127,14 +205,25 @@ export default function Report( { boot, data, setData, navigate } ) {
 			);
 			return;
 		}
+		if ( blocked ) {
+			toast(
+				__(
+					'Tick the box under the screenshots first.',
+					'nhrrob-issue-reporter'
+				),
+				'error'
+			);
+			return;
+		}
 		setCommenting( number );
-		api( '/comments', 'POST', {
+		withImages( {
 			plugin: file,
 			number,
 			what,
 			steps,
 			environment,
 		} )
+			.then( ( fields ) => api( '/comments', 'POST', fields ) )
 			.then( ( answer ) => {
 				setData( { ...data, reports: answer.reports } );
 				toast(
@@ -198,7 +287,18 @@ export default function Report( { boot, data, setData, navigate } ) {
 					title={ __( 'The report', 'nhrrob-issue-reporter' ) }
 					icon="report"
 				>
-					<form className={ P + 'form' } onSubmit={ send }>
+					<form
+						className={ P + 'form' }
+						onSubmit={ send }
+						onPaste={ ( e ) => {
+							if (
+								e.clipboardData &&
+								e.clipboardData.files.length
+							) {
+								addImages( e.clipboardData.files );
+							}
+						} }
+					>
 						<Field
 							id={ P + 'plugin' }
 							label={ __(
@@ -301,6 +401,83 @@ export default function Report( { boot, data, setData, navigate } ) {
 						</Field>
 
 						<Field
+							id={ P + 'screenshots' }
+							label={ __(
+								'Screenshots',
+								'nhrrob-issue-reporter'
+							) }
+							help={ __(
+								'PNG, JPEG, WebP or GIF, at most 5 MB each and 5 in all. You can also paste an image anywhere in the form.',
+								'nhrrob-issue-reporter'
+							) }
+						>
+							<input
+								id={ P + 'screenshots' }
+								className={ P + 'file' }
+								type="file"
+								accept={ TYPES.join( ',' ) }
+								multiple
+								disabled={ images.length >= MAX_FILES }
+								onChange={ ( e ) => {
+									addImages( e.target.files );
+									e.target.value = '';
+								} }
+							/>
+						</Field>
+						{ images.length > 0 && (
+							<>
+								<ul className={ P + 'shots' }>
+									{ images.map( ( image ) => (
+										<li key={ image.preview }>
+											<img
+												src={ image.preview }
+												alt={ image.file.name }
+											/>
+											<Button
+												small
+												variant="danger"
+												disabled={ sending }
+												onClick={ () =>
+													removeImage( image )
+												}
+											>
+												{ __(
+													'Remove',
+													'nhrrob-issue-reporter'
+												) }
+											</Button>
+										</li>
+									) ) }
+								</ul>
+								{ ! data.publicSite && (
+									<Note tone="warn">
+										{ __(
+											'This site does not look reachable from the internet, so GitHub may not be able to show these images. A password-protected site has the same problem.',
+											'nhrrob-issue-reporter'
+										) }
+									</Note>
+								) }
+								<label
+									className={ P + 'check' }
+									htmlFor={ P + 'allow-address' }
+								>
+									<input
+										id={ P + 'allow-address' }
+										type="checkbox"
+										checked={ allowAddress }
+										onChange={ ( e ) =>
+											setAllowAddress( e.target.checked )
+										}
+									/>
+									{ __(
+										'The screenshots are added to this site’s Media Library and linked from the issue, so the issue shows this site’s address. Send them anyway.',
+										'nhrrob-issue-reporter'
+									) }
+								</label>
+							</>
+						) }
+
+						<Field
 							id={ P + 'environment' }
 							label={ __(
 								'Environment',
@@ -327,7 +504,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 							<Button
 								variant="primary"
 								type="submit"
-								disabled={ ! ready || sending }
+								disabled={ ! ready || sending || blocked }
 							>
 								{ sending
 									? __( 'Sending…', 'nhrrob-issue-reporter' )
@@ -423,7 +600,9 @@ export default function Report( { boot, data, setData, navigate } ) {
 											small
 											variant="soft"
 											disabled={
-												!! commenting || sending
+												!! commenting ||
+												sending ||
+												blocked
 											}
 											onClick={ () =>
 												comment( issue.number )

@@ -908,3 +908,48 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 	background: var(--ir-sunken);
 	white-space: normal;
 }
+
+/* ---- Report: screenshots ---- */
+.#{$p}-app .#{$p}-file {
+	font-size: 13px;
+	color: var(--ir-text);
+}
+
+.#{$p}-shots {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 6px;
+		margin: 0;
+	}
+
+	img {
+		display: block;
+		width: 120px;
+		height: 80px;
+		object-fit: cover;
+		border: 1px solid var(--ir-border-strong);
+		border-radius: 8px;
+		background: var(--ir-sunken);
+	}
+}
+
+.#{$p}-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	font-size: 13px;
+	color: var(--ir-text);
+
+	input {
+		margin-top: 2px;
+	}
+}
