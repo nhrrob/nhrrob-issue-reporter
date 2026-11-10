@@ -67,6 +67,13 @@ class AbilitiesTest extends TestCase {
 		$this->assertFalse( $input['additionalProperties'] );
 	}
 
+	public function testTheStateCanBeNarrowedToOneRepositoryButNeedsNothing() {
+		$input = $this->definitions()['nhrrob-issue-reporter/get-state']['input_schema'];
+
+		$this->assertSame( [ 'repo' ], array_keys( $input['properties'] ) );
+		$this->assertArrayNotHasKey( 'required', $input );
+	}
+
 	public function testASearchNeedsAPluginAndATitle() {
 		$input = $this->definitions()['nhrrob-issue-reporter/find-similar-issues']['input_schema'];
 

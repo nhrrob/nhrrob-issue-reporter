@@ -101,6 +101,16 @@ class Abilities {
 				'label'               => __( 'Get plugins and sent reports', 'nhrrob-issue-reporter' ),
 				'description'         => __( 'Returns the installed plugins, must-use plugins and themes, and the other repositories set in Settings, each with its `type` and the GitHub repository it reports to (empty when none is known), whether a GitHub token is set, the environment text a report should include, and the reports sent so far. Makes no request to GitHub. Start here.', 'nhrrob-issue-reporter' ),
 				'category'            => self::CATEGORY,
+				'input_schema'        => [
+					'type'                 => 'object',
+					'properties'           => [
+						'repo' => [
+							'type'        => 'string',
+							'description' => __( 'Only the sent reports to this repository, "owner/name". Leave it out for all.', 'nhrrob-issue-reporter' ),
+						],
+					],
+					'additionalProperties' => false,
+				],
 				'output_schema'       => [ 'type' => 'object' ],
 				'execute_callback'    => [ $this, 'get_state' ],
 				'permission_callback' => $gate,
@@ -160,10 +170,18 @@ class Abilities {
 	/**
 	 * Plugins, token presence, environment and sent reports.
 	 *
+	 * @param array|null $input Optional `repo`, to list only the reports to it.
 	 * @return array
 	 */
-	public function get_state() {
-		return ( new Rest() )->state();
+	public function get_state( $input = null ) {
+		$state = ( new Rest() )->state();
+		$repo  = is_array( $input ) && isset( $input['repo'] ) ? Repos::normalize( $input['repo'] ) : '';
+
+		if ( '' !== $repo ) {
+			$state['reports'] = array_values( wp_list_filter( $state['reports'], [ 'repo' => $repo ] ) );
+		}
+
+		return $state;
 	}
 
 	/**
