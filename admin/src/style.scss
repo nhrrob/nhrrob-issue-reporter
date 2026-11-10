@@ -839,3 +839,35 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 		animation: none !important;
 	}
 }
+
+/* ---- Settings: other repositories ---- */
+.#{$p}-inline__row {
+	align-items: flex-end;
+
+	> .#{$p}-field {
+		flex: 1 1 220px;
+	}
+}
+
+.#{$p}-extra {
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 14px;
+		margin: 0;
+		padding: 8px 0;
+		border-bottom: 1px solid var(--ir-border);
+	}
+
+	.is-mono {
+		flex: 1 1 auto;
+		font-family: var(--ir-mono);
+		font-size: 12.5px;
+		color: var(--ir-muted);
+	}
+}

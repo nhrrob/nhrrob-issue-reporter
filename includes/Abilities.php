@@ -89,7 +89,7 @@ class Abilities {
 		};
 		$plugin = [
 			'type'        => 'string',
-			'description' => __( 'The plugin file, such as "nhrrob-secure/nhrrob-secure.php", from get-state.', 'nhrrob-issue-reporter' ),
+			'description' => __( 'The `file` of a plugin, must-use plugin, theme or other repository from get-state, such as "nhrrob-secure/nhrrob-secure.php", "mu:site.php", "theme:twentytwentyfive" or "repo:owner/name".', 'nhrrob-issue-reporter' ),
 		];
 		$title  = [
 			'type'        => 'string',
@@ -99,7 +99,7 @@ class Abilities {
 		return [
 			'nhrrob-issue-reporter/get-state'           => [
 				'label'               => __( 'Get plugins and sent reports', 'nhrrob-issue-reporter' ),
-				'description'         => __( 'Returns the installed plugins with the GitHub repository each reports to (empty when none is known), whether a GitHub token is set, the environment text a report should include, and the reports sent so far. Makes no request to GitHub. Start here.', 'nhrrob-issue-reporter' ),
+				'description'         => __( 'Returns the installed plugins, must-use plugins and themes, and the other repositories set in Settings, each with its `type` and the GitHub repository it reports to (empty when none is known), whether a GitHub token is set, the environment text a report should include, and the reports sent so far. Makes no request to GitHub. Start here.', 'nhrrob-issue-reporter' ),
 				'category'            => self::CATEGORY,
 				'output_schema'       => [ 'type' => 'object' ],
 				'execute_callback'    => [ $this, 'get_state' ],

@@ -139,6 +139,23 @@ class GitHub {
 	}
 
 	/**
+	 * Whether the token can see a repository, asked when one is saved.
+	 *
+	 * @param string $repo Repository, "owner/name".
+	 * @return true|\WP_Error
+	 */
+	public static function check( $repo ) {
+		$data = self::request( 'GET', '/repos/' . $repo );
+
+		if ( is_wp_error( $data ) ) {
+			/* translators: 1: repository such as owner/name, 2: why it failed. */
+			return new \WP_Error( $data->get_error_code(), sprintf( __( '%1$s: %2$s', 'nhrrob-issue-reporter' ), $repo, $data->get_error_message() ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Whether an issue is open or closed.
 	 *
 	 * @param string $repo   Repository, "owner/name".

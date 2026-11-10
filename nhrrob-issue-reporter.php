@@ -67,6 +67,7 @@ final class NHRRob_Issue_Reporter {
 	 */
 	public function init_plugin(): void {
 		add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
+		add_filter( 'extra_theme_headers', [ \NHRRob\IssueReporter\Repos::class, 'theme_headers' ] );
 		( new \NHRRob\IssueReporter\Rest() )->init();
 		( new \NHRRob\IssueReporter\Abilities() )->init();
 

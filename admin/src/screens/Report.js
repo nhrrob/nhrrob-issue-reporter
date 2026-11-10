@@ -18,6 +18,21 @@ import {
 
 const P = 'nhrrob-issue-reporter-';
 
+// The line about what is reported, at the top of the Environment box. Sent
+// as is, so it is not translated, like the rest of the environment text.
+const LINE = {
+	plugin: 'Plugin',
+	'mu-plugin': 'Must-use plugin',
+	theme: 'Theme',
+};
+
+export const GROUPS = [
+	[ 'plugin', __( 'Plugins', 'nhrrob-issue-reporter' ) ],
+	[ 'mu-plugin', __( 'Must-use plugins', 'nhrrob-issue-reporter' ) ],
+	[ 'theme', __( 'Themes', 'nhrrob-issue-reporter' ) ],
+	[ 'repo', __( 'Other repositories', 'nhrrob-issue-reporter' ) ],
+];
+
 export default function Report( { boot, data, setData, navigate } ) {
 	const toast = useToast();
 	const plugins = data.plugins.filter( ( p ) => p.repo );
@@ -40,8 +55,14 @@ export default function Report( { boot, data, setData, navigate } ) {
 	useEffect( () => {
 		if ( ! edited ) {
 			setEnvironment(
-				( plugin
-					? '- Plugin: ' + plugin.name + ' ' + plugin.version + '\n'
+				( plugin && LINE[ plugin.type ]
+					? '- ' +
+					  LINE[ plugin.type ] +
+					  ': ' +
+					  plugin.name +
+					  ' ' +
+					  plugin.version +
+					  '\n'
 					: '' ) + data.environment
 			);
 		}
@@ -142,7 +163,10 @@ export default function Report( { boot, data, setData, navigate } ) {
 					<form className={ P + 'form' } onSubmit={ send }>
 						<Field
 							id={ P + 'plugin' }
-							label={ __( 'Plugin', 'nhrrob-issue-reporter' ) }
+							label={ __(
+								'Plugin or theme',
+								'nhrrob-issue-reporter'
+							) }
 						>
 							<select
 								id={ P + 'plugin' }
@@ -156,15 +180,32 @@ export default function Report( { boot, data, setData, navigate } ) {
 							>
 								<option value="">
 									{ __(
-										'Choose a plugin',
+										'Choose one',
 										'nhrrob-issue-reporter'
 									) }
 								</option>
-								{ plugins.map( ( p ) => (
-									<option key={ p.file } value={ p.file }>
-										{ p.name }
-									</option>
-								) ) }
+								{ GROUPS.map( ( [ type, label ] ) => {
+									const rows = plugins.filter(
+										( p ) => p.type === type
+									);
+									return (
+										rows.length > 0 && (
+											<optgroup
+												key={ type }
+												label={ label }
+											>
+												{ rows.map( ( p ) => (
+													<option
+														key={ p.file }
+														value={ p.file }
+													>
+														{ p.name }
+													</option>
+												) ) }
+											</optgroup>
+										)
+									);
+								} ) }
 							</select>
 						</Field>
 

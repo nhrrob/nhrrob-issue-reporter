@@ -14,9 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Repos Class
  *
- * A repository is always the string "owner/name". It comes from the settings
- * when one is saved there for the plugin, otherwise from the plugin's own
- * header.
+ * A report goes to a target: a plugin (keyed by its file), a must-use plugin
+ * ("mu:" and its file), a theme ("theme:" and its folder) or another
+ * repository saved in the settings ("repo:" and the repository). A repository
+ * is always the string "owner/name". It comes from the settings when one is
+ * saved there, otherwise from the target's own header.
  */
 class Repos {
 
@@ -29,6 +31,19 @@ class Repos {
 	public static function headers( $headers ) {
 		$headers   = (array) $headers;
 		$headers[] = 'GitHub Plugin URI';
+
+		return $headers;
+	}
+
+	/**
+	 * Read the same header in a theme's style.css.
+	 *
+	 * @param array $headers Extra headers.
+	 * @return array
+	 */
+	public static function theme_headers( $headers ) {
+		$headers   = (array) $headers;
+		$headers[] = 'GitHub Theme URI';
 
 		return $headers;
 	}
@@ -87,9 +102,10 @@ class Repos {
 	}
 
 	/**
-	 * Every installed plugin with its repository.
+	 * Everything a report can go to, with its repository.
 	 *
-	 * @return array Keyed by plugin file: `name`, `version`, `repo`, `detected`.
+	 * @return array Keyed as described above: `type` (plugin, mu-plugin, theme
+	 *               or repo), `name`, `version`, `repo`, `detected`.
 	 */
 	public static function all() {
 		if ( ! function_exists( 'get_plugins' ) ) {
@@ -97,19 +113,53 @@ class Repos {
 		}
 
 		$settings = Settings::get();
-		$plugins  = [];
+		$found    = [];
 
 		foreach ( get_plugins() as $file => $data ) {
-			$detected = self::detect( $data );
+			$found[ $file ] = [ 'plugin', $data['Name'], $data['Version'], self::detect( $data ) ];
+		}
 
-			$plugins[ $file ] = [
-				'name'     => (string) $data['Name'],
-				'version'  => (string) $data['Version'],
-				'repo'     => isset( $settings['repos'][ $file ] ) ? $settings['repos'][ $file ] : $detected,
+		foreach ( get_mu_plugins() as $file => $data ) {
+			$found[ 'mu:' . $file ] = [ 'mu-plugin', $data['Name'], $data['Version'], self::detect( $data ) ];
+		}
+
+		foreach ( wp_get_themes() as $folder => $theme ) {
+			$found[ 'theme:' . $folder ] = [
+				'theme',
+				$theme->get( 'Name' ),
+				$theme->get( 'Version' ),
+				self::detect(
+					[
+						'GitHub Plugin URI' => $theme->get( 'GitHub Theme URI' ),
+						'PluginURI'         => $theme->get( 'ThemeURI' ),
+						'UpdateURI'         => $theme->get( 'UpdateURI' ),
+					]
+				),
+			];
+		}
+
+		$targets = [];
+
+		foreach ( $found as $key => list( $type, $name, $version, $detected ) ) {
+			$targets[ $key ] = [
+				'type'     => $type,
+				'name'     => (string) $name,
+				'version'  => (string) $version,
+				'repo'     => isset( $settings['repos'][ $key ] ) ? $settings['repos'][ $key ] : $detected,
 				'detected' => $detected,
 			];
 		}
 
-		return $plugins;
+		foreach ( $settings['extra'] as $extra ) {
+			$targets[ 'repo:' . $extra['repo'] ] = [
+				'type'     => 'repo',
+				'name'     => $extra['label'],
+				'version'  => '',
+				'repo'     => $extra['repo'],
+				'detected' => $extra['repo'],
+			];
+		}
+
+		return $targets;
 	}
 }

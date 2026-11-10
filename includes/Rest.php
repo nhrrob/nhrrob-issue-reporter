@@ -111,45 +111,101 @@ class Rest {
 	/**
 	 * Save repositories and, when given, the token.
 	 *
-	 * @param \WP_REST_Request $request Request: `repos` (plugin file => repository), `token`, `removeToken`.
+	 * A repository that is new is checked with GitHub when a token is set, so
+	 * a mistyped one is refused right away.
+	 *
+	 * @param \WP_REST_Request $request Request: `repos` (target key => repository; the whole map is replaced),
+	 *                                  `extra` (rows of `label` and `repo`; the whole list is replaced), `token`, `removeToken`.
 	 * @return array|\WP_Error The new state.
 	 */
 	public function update_settings( $request ) {
-		$repos = $request->get_param( 'repos' );
-
-		if ( is_array( $repos ) ) {
-			$plugins = Repos::all();
-			$keep    = [];
-
-			foreach ( $repos as $file => $repo ) {
-				$typed = trim( is_scalar( $repo ) ? (string) $repo : '' );
-				$clean = Repos::normalize( $typed );
-
-				if ( ! isset( $plugins[ $file ] ) ) {
-					continue;
-				}
-
-				if ( '' !== $typed && '' === $clean ) {
-					/* translators: %s: plugin name. */
-					return new \WP_Error( 'nhrrob_issue_reporter_bad_repo', sprintf( __( 'The repository of %s has to be owner/name or a github.com address.', 'nhrrob-issue-reporter' ), $plugins[ $file ]['name'] ), [ 'status' => 400 ] );
-				}
-
-				// Saved only when it differs from what the plugin's own header says.
-				if ( '' !== $clean && $clean !== $plugins[ $file ]['detected'] ) {
-					$keep[ $file ] = $clean;
-				}
-			}
-
-			Settings::update( [ 'repos' => $keep ] );
-		}
-
 		if ( $request->get_param( 'removeToken' ) ) {
 			Settings::update_token( '' );
 		} elseif ( is_string( $request->get_param( 'token' ) ) && '' !== trim( $request->get_param( 'token' ) ) ) {
 			Settings::update_token( sanitize_text_field( $request->get_param( 'token' ) ) );
 		}
 
+		$settings = Settings::get();
+		$targets  = Repos::all();
+		$known    = array_unique( array_column( $targets, 'repo' ) );
+		$new      = [];
+		$repos    = $request->get_param( 'repos' );
+		$extra    = $request->get_param( 'extra' );
+
+		if ( is_array( $repos ) ) {
+			$settings['repos'] = [];
+
+			foreach ( $repos as $key => $repo ) {
+				if ( ! isset( $targets[ $key ] ) || 'repo' === $targets[ $key ]['type'] ) {
+					continue;
+				}
+
+				$clean = $this->repo( $repo, $targets[ $key ]['name'] );
+
+				if ( is_wp_error( $clean ) ) {
+					return $clean;
+				}
+
+				// Saved only when it differs from what the target's own header says.
+				if ( '' !== $clean && $clean !== $targets[ $key ]['detected'] ) {
+					$settings['repos'][ $key ] = $clean;
+				}
+
+				$new[] = $clean;
+			}
+		}
+
+		if ( is_array( $extra ) ) {
+			$settings['extra'] = [];
+
+			foreach ( $extra as $row ) {
+				$label = is_array( $row ) && isset( $row['label'] ) && is_scalar( $row['label'] ) ? (string) $row['label'] : '';
+				$clean = $this->repo( is_array( $row ) && isset( $row['repo'] ) ? $row['repo'] : '', $label );
+
+				if ( is_wp_error( $clean ) ) {
+					return $clean;
+				}
+
+				if ( '' !== $clean ) {
+					$settings['extra'][] = [
+						'label' => $label,
+						'repo'  => $clean,
+					];
+					$new[]               = $clean;
+				}
+			}
+		}
+
+		foreach ( '' !== Settings::token() ? array_diff( array_unique( array_filter( $new ) ), $known ) : [] as $repo ) {
+			$checked = GitHub::check( $repo );
+
+			if ( is_wp_error( $checked ) ) {
+				return $this->refused( $checked );
+			}
+		}
+
+		Settings::update( $settings );
+
 		return $this->state();
+	}
+
+	/**
+	 * A typed repository as "owner/name".
+	 *
+	 * @param mixed  $typed What was typed.
+	 * @param string $name  What it is for, for the error message.
+	 * @return string|\WP_Error Empty when nothing was typed.
+	 */
+	private function repo( $typed, $name ) {
+		$typed = trim( is_scalar( $typed ) ? (string) $typed : '' );
+		$clean = Repos::normalize( $typed );
+
+		if ( '' !== $typed && '' === $clean ) {
+			/* translators: %s: plugin, theme or label. */
+			return new \WP_Error( 'nhrrob_issue_reporter_bad_repo', sprintf( __( 'The repository of %s has to be owner/name or a github.com address.', 'nhrrob-issue-reporter' ), '' !== $name ? $name : $typed ), [ 'status' => 400 ] );
+		}
+
+		return $clean;
 	}
 
 	/**
@@ -248,10 +304,10 @@ class Rest {
 	}
 
 	/**
-	 * The installed plugin a request names, when its repository is known.
+	 * The plugin, theme or repository a request names, when its repository is known.
 	 *
-	 * @param mixed $file Plugin file.
-	 * @return array|\WP_Error One plugin, as Repos::all() returns it.
+	 * @param mixed $file Key from Repos::all(), such as a plugin file.
+	 * @return array|\WP_Error One target, as Repos::all() returns it.
 	 */
 	private function plugin( $file ) {
 		$plugins = Repos::all();

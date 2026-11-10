@@ -22,7 +22,7 @@ class Environment {
 	/**
 	 * The site's details as a Markdown list, shown in the form before sending.
 	 *
-	 * @param array $plugins Every plugin, as Repos::all() returns it.
+	 * @param array $plugins Every target, as Repos::all() returns it.
 	 * @return string
 	 */
 	public static function text( array $plugins ) {
@@ -31,7 +31,7 @@ class Environment {
 		$active = [];
 
 		foreach ( $plugins as $file => $plugin ) {
-			if ( is_plugin_active( $file ) ) {
+			if ( 'plugin' === $plugin['type'] && is_plugin_active( $file ) ) {
 				$active[] = $plugin['name'] . ' ' . $plugin['version'];
 			}
 		}
@@ -39,7 +39,7 @@ class Environment {
 		$lines = [
 			'WordPress'      => get_bloginfo( 'version' ) . ( is_multisite() ? ' (multisite)' : '' ),
 			'PHP'            => PHP_VERSION,
-			'Theme'          => $theme->get( 'Name' ) . ' ' . $theme->get( 'Version' ) . ( $parent ? ' (child of ' . $parent->get( 'Name' ) . ' ' . $parent->get( 'Version' ) . ')' : '' ),
+			'Active theme'   => $theme->get( 'Name' ) . ' ' . $theme->get( 'Version' ) . ( $parent ? ' (child of ' . $parent->get( 'Name' ) . ' ' . $parent->get( 'Version' ) . ')' : '' ),
 			'Active plugins' => implode( ', ', $active ),
 		];
 
