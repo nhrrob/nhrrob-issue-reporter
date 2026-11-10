@@ -165,7 +165,7 @@ class Rest {
 			return $plugin;
 		}
 
-		$issues = GitHub::similar( $plugin['repo'], sanitize_text_field( (string) $request->get_param( 'title' ) ) );
+		$issues = GitHub::similar( $plugin['repo'], self::line( $request->get_param( 'title' ) ) );
 
 		return is_wp_error( $issues ) ? $this->refused( $issues ) : [ 'issues' => $issues ];
 	}
@@ -194,18 +194,17 @@ class Rest {
 			return $plugin;
 		}
 
-		$title = trim( sanitize_text_field( (string) $request->get_param( 'title' ) ) );
-		$what  = trim( sanitize_textarea_field( (string) $request->get_param( 'what' ) ) );
+		$title = self::line( $request->get_param( 'title' ) );
+		$what  = self::text( $request->get_param( 'what' ) );
 
 		if ( '' === $title || '' === $what ) {
 			return new \WP_Error( 'nhrrob_issue_reporter_incomplete', __( 'A title and a description of what happened are needed.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
 		}
 
-		$title = mb_substr( $title, 0, 200 );
 		$issue = GitHub::create(
 			$plugin['repo'],
 			$title,
-			GitHub::body( $what, sanitize_textarea_field( (string) $request->get_param( 'steps' ) ), sanitize_textarea_field( (string) $request->get_param( 'environment' ) ) )
+			GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ) )
 		);
 
 		if ( is_wp_error( $issue ) ) {
@@ -220,6 +219,32 @@ class Rest {
 			'report'  => $reports[0],
 			'reports' => $reports,
 		];
+	}
+
+	/**
+	 * Text as typed, for an issue on GitHub. Tags are not stripped: a report
+	 * often quotes code such as `Array<string>`, and GitHub sanitizes the HTML
+	 * of an issue itself. The text is never printed by this plugin.
+	 *
+	 * @param mixed $value Raw value.
+	 * @param int   $max   Most characters kept; GitHub takes 65536 in a body.
+	 * @return string Valid UTF-8 without control characters other than tabs and newlines.
+	 */
+	public static function text( $value, $max = 20000 ) {
+		$text = wp_check_invalid_utf8( is_scalar( $value ) ? (string) $value : '' );
+		$text = (string) preg_replace( '/[^\P{Cc}\t\n]/u', '', str_replace( "\r\n", "\n", $text ) );
+
+		return trim( mb_substr( $text, 0, $max ) );
+	}
+
+	/**
+	 * One line of text as typed, such as a title.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function line( $value ) {
+		return trim( (string) preg_replace( '/\s+/u', ' ', self::text( $value, 200 ) ) );
 	}
 
 	/**
