@@ -84,6 +84,26 @@ class Rest {
 				],
 			]
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/screenshots',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'screenshot' ],
+				'permission_callback' => $gate,
+			]
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/comments',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'comment' ],
+				'permission_callback' => $gate,
+			]
+		);
 	}
 
 	/**
@@ -101,6 +121,7 @@ class Rest {
 
 		return [
 			'plugins'       => $list,
+			'publicSite'    => Screenshots::site_is_public(),
 			'hasToken'      => '' !== Settings::token(),
 			'tokenInConfig' => Settings::token_is_constant(),
 			'environment'   => Environment::text( $plugins ),
@@ -111,45 +132,101 @@ class Rest {
 	/**
 	 * Save repositories and, when given, the token.
 	 *
-	 * @param \WP_REST_Request $request Request: `repos` (plugin file => repository), `token`, `removeToken`.
+	 * A repository that is new is checked with GitHub when a token is set, so
+	 * a mistyped one is refused right away.
+	 *
+	 * @param \WP_REST_Request $request Request: `repos` (target key => repository; the whole map is replaced),
+	 *                                  `extra` (rows of `label` and `repo`; the whole list is replaced), `token`, `removeToken`.
 	 * @return array|\WP_Error The new state.
 	 */
 	public function update_settings( $request ) {
-		$repos = $request->get_param( 'repos' );
-
-		if ( is_array( $repos ) ) {
-			$plugins = Repos::all();
-			$keep    = [];
-
-			foreach ( $repos as $file => $repo ) {
-				$typed = trim( is_scalar( $repo ) ? (string) $repo : '' );
-				$clean = Repos::normalize( $typed );
-
-				if ( ! isset( $plugins[ $file ] ) ) {
-					continue;
-				}
-
-				if ( '' !== $typed && '' === $clean ) {
-					/* translators: %s: plugin name. */
-					return new \WP_Error( 'nhrrob_issue_reporter_bad_repo', sprintf( __( 'The repository of %s has to be owner/name or a github.com address.', 'nhrrob-issue-reporter' ), $plugins[ $file ]['name'] ), [ 'status' => 400 ] );
-				}
-
-				// Saved only when it differs from what the plugin's own header says.
-				if ( '' !== $clean && $clean !== $plugins[ $file ]['detected'] ) {
-					$keep[ $file ] = $clean;
-				}
-			}
-
-			Settings::update( [ 'repos' => $keep ] );
-		}
-
 		if ( $request->get_param( 'removeToken' ) ) {
 			Settings::update_token( '' );
 		} elseif ( is_string( $request->get_param( 'token' ) ) && '' !== trim( $request->get_param( 'token' ) ) ) {
 			Settings::update_token( sanitize_text_field( $request->get_param( 'token' ) ) );
 		}
 
+		$settings = Settings::get();
+		$targets  = Repos::all();
+		$known    = array_unique( array_column( $targets, 'repo' ) );
+		$new      = [];
+		$repos    = $request->get_param( 'repos' );
+		$extra    = $request->get_param( 'extra' );
+
+		if ( is_array( $repos ) ) {
+			$settings['repos'] = [];
+
+			foreach ( $repos as $key => $repo ) {
+				if ( ! isset( $targets[ $key ] ) || 'repo' === $targets[ $key ]['type'] ) {
+					continue;
+				}
+
+				$clean = $this->repo( $repo, $targets[ $key ]['name'] );
+
+				if ( is_wp_error( $clean ) ) {
+					return $clean;
+				}
+
+				// Saved only when it differs from what the target's own header says.
+				if ( '' !== $clean && $clean !== $targets[ $key ]['detected'] ) {
+					$settings['repos'][ $key ] = $clean;
+				}
+
+				$new[] = $clean;
+			}
+		}
+
+		if ( is_array( $extra ) ) {
+			$settings['extra'] = [];
+
+			foreach ( $extra as $row ) {
+				$label = is_array( $row ) && isset( $row['label'] ) && is_scalar( $row['label'] ) ? (string) $row['label'] : '';
+				$clean = $this->repo( is_array( $row ) && isset( $row['repo'] ) ? $row['repo'] : '', $label );
+
+				if ( is_wp_error( $clean ) ) {
+					return $clean;
+				}
+
+				if ( '' !== $clean ) {
+					$settings['extra'][] = [
+						'label' => $label,
+						'repo'  => $clean,
+					];
+					$new[]               = $clean;
+				}
+			}
+		}
+
+		foreach ( '' !== Settings::token() ? array_diff( array_unique( array_filter( $new ) ), $known ) : [] as $repo ) {
+			$checked = GitHub::check( $repo );
+
+			if ( is_wp_error( $checked ) ) {
+				return $this->refused( $checked );
+			}
+		}
+
+		Settings::update( $settings );
+
 		return $this->state();
+	}
+
+	/**
+	 * A typed repository as "owner/name".
+	 *
+	 * @param mixed  $typed What was typed.
+	 * @param string $name  What it is for, for the error message.
+	 * @return string|\WP_Error Empty when nothing was typed.
+	 */
+	private function repo( $typed, $name ) {
+		$typed = trim( is_scalar( $typed ) ? (string) $typed : '' );
+		$clean = Repos::normalize( $typed );
+
+		if ( '' !== $typed && '' === $clean ) {
+			/* translators: %s: plugin, theme or label. */
+			return new \WP_Error( 'nhrrob_issue_reporter_bad_repo', sprintf( __( 'The repository of %s has to be owner/name or a github.com address.', 'nhrrob-issue-reporter' ), '' !== $name ? $name : $typed ), [ 'status' => 400 ] );
+		}
+
+		return $clean;
 	}
 
 	/**
@@ -165,7 +242,7 @@ class Rest {
 			return $plugin;
 		}
 
-		$issues = GitHub::similar( $plugin['repo'], sanitize_text_field( (string) $request->get_param( 'title' ) ) );
+		$issues = GitHub::similar( $plugin['repo'], self::line( $request->get_param( 'title' ) ) );
 
 		return is_wp_error( $issues ) ? $this->refused( $issues ) : [ 'issues' => $issues ];
 	}
@@ -184,7 +261,8 @@ class Rest {
 	/**
 	 * Send a report.
 	 *
-	 * @param \WP_REST_Request $request Request: `plugin` (file), `title`, `what`, `steps`, `environment`.
+	 * @param \WP_REST_Request $request Request: `plugin` (key), `title`, `what`, `steps`, `environment`,
+	 *                                  and optionally `screenshots` (attachment ids) with `allowSiteAddress`.
 	 * @return array|\WP_Error `report` (the new row) and `reports`.
 	 */
 	public function send( $request ) {
@@ -194,18 +272,23 @@ class Rest {
 			return $plugin;
 		}
 
-		$title = trim( sanitize_text_field( (string) $request->get_param( 'title' ) ) );
-		$what  = trim( sanitize_textarea_field( (string) $request->get_param( 'what' ) ) );
+		$title = self::line( $request->get_param( 'title' ) );
+		$what  = self::text( $request->get_param( 'what' ) );
 
 		if ( '' === $title || '' === $what ) {
 			return new \WP_Error( 'nhrrob_issue_reporter_incomplete', __( 'A title and a description of what happened are needed.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
 		}
 
-		$title = mb_substr( $title, 0, 200 );
+		$images = $this->screenshots( $request );
+
+		if ( is_wp_error( $images ) ) {
+			return $images;
+		}
+
 		$issue = GitHub::create(
 			$plugin['repo'],
 			$title,
-			GitHub::body( $what, sanitize_textarea_field( (string) $request->get_param( 'steps' ) ), sanitize_textarea_field( (string) $request->get_param( 'environment' ) ) )
+			GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images )
 		);
 
 		if ( is_wp_error( $issue ) ) {
@@ -223,10 +306,118 @@ class Rest {
 	}
 
 	/**
-	 * The installed plugin a request names, when its repository is known.
+	 * Upload one screenshot to the media library, before a report is sent.
 	 *
-	 * @param mixed $file Plugin file.
-	 * @return array|\WP_Error One plugin, as Repos::all() returns it.
+	 * @param \WP_REST_Request $request Request with the image as the file `file`.
+	 * @return array|\WP_Error `id` and `url`.
+	 */
+	public function screenshot( $request ) {
+		$files = $request->get_file_params();
+
+		return Screenshots::upload( isset( $files['file'] ) ? $files['file'] : null );
+	}
+
+	/**
+	 * The screenshots a report or comment links to, once the person agreed
+	 * that the links show the site's address.
+	 *
+	 * @param \WP_REST_Request $request Request: `screenshots` (attachment ids) and `allowSiteAddress`.
+	 * @return string|\WP_Error Markdown, empty without screenshots.
+	 */
+	private function screenshots( $request ) {
+		$ids = $request->get_param( 'screenshots' );
+
+		if ( empty( $ids ) ) {
+			return '';
+		}
+
+		if ( true !== $request->get_param( 'allowSiteAddress' ) ) {
+			return new \WP_Error( 'nhrrob_issue_reporter_address', __( 'The links to screenshots show this site\'s address. Agree to that before sending.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
+		}
+
+		return Screenshots::markdown( $ids );
+	}
+
+	/**
+	 * Comment on an open issue in the repository of a plugin, theme or other
+	 * repository. The address is built from that repository, so the comment
+	 * cannot land anywhere else.
+	 *
+	 * @param \WP_REST_Request $request Request: `plugin` (key), `number`, and `body`, or `what`,
+	 *                                  `steps` and `environment` as in a report; `screenshots` as in a report.
+	 * @return array|\WP_Error `url` of the comment and `reports`.
+	 */
+	public function comment( $request ) {
+		$plugin = $this->plugin( $request->get_param( 'plugin' ) );
+
+		if ( is_wp_error( $plugin ) ) {
+			return $plugin;
+		}
+
+		$images = $this->screenshots( $request );
+
+		if ( is_wp_error( $images ) ) {
+			return $images;
+		}
+
+		$number = filter_var( $request->get_param( 'number' ), FILTER_VALIDATE_INT, [ 'options' => [ 'min_range' => 1 ] ] );
+		$body   = self::text( $request->get_param( 'body' ) );
+
+		if ( '' === $body ) {
+			$body = GitHub::body( self::text( $request->get_param( 'what' ) ), self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images );
+		} elseif ( '' !== $images ) {
+			$body .= "\n\n" . $images;
+		}
+
+		if ( false === $number || '' === $body ) {
+			return new \WP_Error( 'nhrrob_issue_reporter_incomplete', __( 'An issue number and the text of the comment are needed.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
+		}
+
+		$comment = GitHub::comment( $plugin['repo'], $number, $body );
+
+		if ( is_wp_error( $comment ) ) {
+			return $this->refused( $comment );
+		}
+
+		Reports::commented( $plugin['repo'], $number );
+
+		return [
+			'url'     => $comment['url'],
+			'reports' => Reports::all(),
+		];
+	}
+
+	/**
+	 * Text as typed, for an issue on GitHub. Tags are not stripped: a report
+	 * often quotes code such as `Array<string>`, and GitHub sanitizes the HTML
+	 * of an issue itself. The text is never printed by this plugin.
+	 *
+	 * @param mixed $value Raw value.
+	 * @param int   $max   Most characters kept; GitHub takes 65536 in a body.
+	 * @return string Valid UTF-8 without control characters other than tabs and newlines.
+	 */
+	public static function text( $value, $max = 20000 ) {
+		$text = wp_check_invalid_utf8( is_scalar( $value ) ? (string) $value : '' );
+		$text = (string) preg_replace( '/[^\P{Cc}\t\n]/u', '', str_replace( "\r\n", "\n", $text ) );
+
+		return trim( mb_substr( $text, 0, $max ) );
+	}
+
+	/**
+	 * One line of text as typed, such as a title.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function line( $value ) {
+		return trim( (string) preg_replace( '/\s+/u', ' ', self::text( $value, 200 ) ) );
+	}
+
+	/**
+	 * The plugin, theme or repository a request names, when its repository is known.
+	 *
+	 * @param mixed $file Key from Repos::all(), such as a plugin file.
+	 * @return array|\WP_Error One target, as Repos::all() returns it.
 	 */
 	private function plugin( $file ) {
 		$plugins = Repos::all();

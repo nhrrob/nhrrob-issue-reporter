@@ -1,6 +1,7 @@
 <?php
 /**
- * Plugin settings: the repository of each plugin, and the GitHub token.
+ * Plugin settings: the repository of each plugin and theme, other
+ * repositories to report to, and the GitHub token.
  *
  * @package NHRRob\IssueReporter
  */
@@ -36,17 +37,33 @@ class Settings {
 	 */
 	public static function sanitize( array $input ) {
 		$repos = [];
+		$extra = [];
 
-		foreach ( isset( $input['repos'] ) && is_array( $input['repos'] ) ? $input['repos'] : [] as $file => $repo ) {
+		foreach ( isset( $input['repos'] ) && is_array( $input['repos'] ) ? $input['repos'] : [] as $key => $repo ) {
 			$repo = Repos::normalize( $repo );
 
-			// A plugin is named by its file, such as "akismet/akismet.php".
-			if ( '' !== $repo && is_string( $file ) && preg_match( '#^[A-Za-z0-9._/-]+\.php$#', $file ) ) {
-				$repos[ $file ] = $repo;
+			// A plugin by its file, such as "akismet/akismet.php", a must-use plugin as "mu:" and its file, a theme as "theme:" and its folder.
+			if ( '' !== $repo && is_string( $key ) && preg_match( '#^(?:(?:mu:)?[A-Za-z0-9._/-]+\.php|theme:[A-Za-z0-9._-]+)$#', $key ) ) {
+				$repos[ $key ] = $repo;
 			}
 		}
 
-		return [ 'repos' => $repos ];
+		foreach ( isset( $input['extra'] ) && is_array( $input['extra'] ) ? $input['extra'] : [] as $row ) {
+			$repo = Repos::normalize( is_array( $row ) && isset( $row['repo'] ) ? $row['repo'] : '' );
+
+			if ( '' !== $repo && ! isset( $extra[ $repo ] ) ) {
+				$label          = is_array( $row ) && isset( $row['label'] ) ? trim( sanitize_text_field( (string) $row['label'] ) ) : '';
+				$extra[ $repo ] = [
+					'label' => '' !== $label ? mb_substr( $label, 0, 100 ) : $repo,
+					'repo'  => $repo,
+				];
+			}
+		}
+
+		return [
+			'repos' => $repos,
+			'extra' => array_values( $extra ),
+		];
 	}
 
 	/**

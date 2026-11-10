@@ -89,18 +89,43 @@ class Abilities {
 		};
 		$plugin = [
 			'type'        => 'string',
-			'description' => __( 'The plugin file, such as "nhrrob-secure/nhrrob-secure.php", from get-state.', 'nhrrob-issue-reporter' ),
+			'description' => __( 'The `file` of a plugin, must-use plugin, theme or other repository from get-state, such as "nhrrob-secure/nhrrob-secure.php", "mu:site.php", "theme:twentytwentyfive" or "repo:owner/name".', 'nhrrob-issue-reporter' ),
 		];
 		$title  = [
 			'type'        => 'string',
 			'description' => __( 'A short title of the issue.', 'nhrrob-issue-reporter' ),
 		];
+		$images = [
+			'type'        => 'array',
+			'items'       => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
+			'maxItems'    => Screenshots::MAX_FILES,
+			'description' => __( 'Optional: ids of images in the media library, linked from the issue. The links show the site\'s address, so they need allowSiteAddress.', 'nhrrob-issue-reporter' ),
+		];
+		$allow  = [
+			'type'        => 'boolean',
+			'description' => __( 'True when the person agreed that the screenshot links show the site\'s address. Ask them first.', 'nhrrob-issue-reporter' ),
+		];
 
 		return [
 			'nhrrob-issue-reporter/get-state'           => [
 				'label'               => __( 'Get plugins and sent reports', 'nhrrob-issue-reporter' ),
-				'description'         => __( 'Returns the installed plugins with the GitHub repository each reports to (empty when none is known), whether a GitHub token is set, the environment text a report should include, and the reports sent so far. Makes no request to GitHub. Start here.', 'nhrrob-issue-reporter' ),
+				'description'         => __( 'Returns the installed plugins, must-use plugins and themes, and the other repositories set in Settings, each with its `type` and the GitHub repository it reports to (empty when none is known), whether a GitHub token is set, the environment text a report should include, and the reports sent so far. Makes no request to GitHub. Start here.', 'nhrrob-issue-reporter' ),
 				'category'            => self::CATEGORY,
+				'input_schema'        => [
+					'type'                 => 'object',
+					'properties'           => [
+						'repo' => [
+							'type'        => 'string',
+							'description' => __( 'Only the sent reports to this repository, "owner/name". Leave it out for all.', 'nhrrob-issue-reporter' ),
+						],
+					],
+					'additionalProperties' => false,
+					// Run without input, as before the filter existed.
+					'default'              => [],
+				],
 				'output_schema'       => [ 'type' => 'object' ],
 				'execute_callback'    => [ $this, 'get_state' ],
 				'permission_callback' => $gate,
@@ -131,20 +156,22 @@ class Abilities {
 				'input_schema'        => [
 					'type'                 => 'object',
 					'properties'           => [
-						'plugin'      => $plugin,
-						'title'       => $title,
-						'what'        => [
+						'plugin'           => $plugin,
+						'title'            => $title,
+						'what'             => [
 							'type'        => 'string',
 							'description' => __( 'What happened, and what was expected instead.', 'nhrrob-issue-reporter' ),
 						],
-						'steps'       => [
+						'steps'            => [
 							'type'        => 'string',
 							'description' => __( 'Steps to see it happen.', 'nhrrob-issue-reporter' ),
 						],
-						'environment' => [
+						'environment'      => [
 							'type'        => 'string',
 							'description' => __( 'The environment text from get-state.', 'nhrrob-issue-reporter' ),
 						],
+						'screenshots'      => $images,
+						'allowSiteAddress' => $allow,
 					],
 					'required'             => [ 'plugin', 'title', 'what' ],
 					'additionalProperties' => false,
@@ -154,16 +181,52 @@ class Abilities {
 				'permission_callback' => $gate,
 				'meta'                => $meta( false, false ),
 			],
+			'nhrrob-issue-reporter/comment-on-issue'    => [
+				'label'               => __( 'Comment on an issue', 'nhrrob-issue-reporter' ),
+				'description'         => __( 'Adds a comment to an issue in the plugin\'s GitHub repository, such as a similar issue found with find-similar-issues or a report sent before. The repository may be public: show the person the full text first.', 'nhrrob-issue-reporter' ),
+				'category'            => self::CATEGORY,
+				'input_schema'        => [
+					'type'                 => 'object',
+					'properties'           => [
+						'plugin'           => $plugin,
+						'number'           => [
+							'type'        => 'integer',
+							'minimum'     => 1,
+							'description' => __( 'The issue number in that repository.', 'nhrrob-issue-reporter' ),
+						],
+						'body'             => [
+							'type'        => 'string',
+							'description' => __( 'The comment, in Markdown.', 'nhrrob-issue-reporter' ),
+						],
+						'screenshots'      => $images,
+						'allowSiteAddress' => $allow,
+					],
+					'required'             => [ 'plugin', 'number', 'body' ],
+					'additionalProperties' => false,
+				],
+				'output_schema'       => [ 'type' => 'object' ],
+				'execute_callback'    => [ $this, 'comment_on_issue' ],
+				'permission_callback' => $gate,
+				'meta'                => $meta( false, false ),
+			],
 		];
 	}
 
 	/**
 	 * Plugins, token presence, environment and sent reports.
 	 *
+	 * @param array|null $input Optional `repo`, to list only the reports to it.
 	 * @return array
 	 */
-	public function get_state() {
-		return ( new Rest() )->state();
+	public function get_state( $input = null ) {
+		$state = ( new Rest() )->state();
+		$repo  = is_array( $input ) && isset( $input['repo'] ) ? Repos::normalize( $input['repo'] ) : '';
+
+		if ( '' !== $repo ) {
+			$state['reports'] = array_values( wp_list_filter( $state['reports'], [ 'repo' => $repo ] ) );
+		}
+
+		return $state;
 	}
 
 	/**
@@ -184,6 +247,16 @@ class Abilities {
 	 */
 	public function report_issue( $input ) {
 		return ( new Rest() )->send( $this->request( $input ) );
+	}
+
+	/**
+	 * Comment on an issue.
+	 *
+	 * @param array $input `plugin`, `number`, `body`.
+	 * @return array|\WP_Error
+	 */
+	public function comment_on_issue( $input ) {
+		return ( new Rest() )->comment( $this->request( $input ) );
 	}
 
 	/**

@@ -22,40 +22,95 @@ class GitHub {
 	const API = 'https://api.github.com';
 
 	/**
-	 * Open issues in a repository whose title resembles the given one.
+	 * Words too common to tell one issue from another.
+	 */
+	const STOP_WORDS = [ 'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'can', 'cannot', 'does', 'doesn', 'for', 'from', 'has', 'have', 'how', 'in', 'into', 'is', 'it', 'its', 'not', 'of', 'on', 'or', 'per', 'should', 'so', 'than', 'that', 'the', 'then', 'there', 'this', 'to', 'too', 'was', 'when', 'where', 'which', 'while', 'who', 'why', 'will', 'with', 'without', 'you', 'your' ];
+
+	/**
+	 * The words of a title worth searching for: letters and digits only,
+	 * since anything else could be read by GitHub as search syntax, without
+	 * short and common words, each once, at most six (GitHub allows five ORs).
+	 *
+	 * @param string $title Title.
+	 * @return string[]
+	 */
+	public static function words( $title ) {
+		$words = [];
+
+		foreach ( explode( ' ', (string) preg_replace( '/[^\p{L}\p{N}]+/u', ' ', (string) $title ) ) as $word ) {
+			$key = mb_strtolower( $word );
+
+			if ( mb_strlen( $word ) > 1 && ! in_array( $key, self::STOP_WORDS, true ) && ! isset( $words[ $key ] ) ) {
+				$words[ $key ] = $word;
+			}
+		}
+
+		return array_slice( array_values( $words ), 0, 6 );
+	}
+
+	/**
+	 * Open issues in a repository that share words with the given title, the
+	 * ones sharing the most first.
 	 *
 	 * @param string $repo  Repository, "owner/name".
 	 * @param string $title Title of the new report.
-	 * @return array|\WP_Error Rows of `number`, `title` and `url`.
+	 * @return array|\WP_Error At most five rows of `number`, `title` and `url`.
 	 */
 	public static function similar( $repo, $title ) {
-		// Words only: anything else could be read by GitHub as part of the search syntax.
-		$words = array_slice( array_filter( explode( ' ', (string) preg_replace( '/[^\p{L}\p{N}]+/u', ' ', (string) $title ) ) ), 0, 8 );
+		$words = self::words( $title );
 
 		if ( ! $words ) {
 			return [];
 		}
 
-		$query = 'repo:' . $repo . ' is:issue is:open in:title ' . implode( ' ', $words );
-		$data  = self::request( 'GET', '/search/issues?' . http_build_query( [ 'q' => $query, 'per_page' => 5 ] ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound -- two short pairs.
+		$query = 'repo:' . $repo . ' is:issue is:open in:title ' . implode( ' OR ', $words );
+		$data  = self::request( 'GET', '/search/issues?' . http_build_query( [ 'q' => $query, 'per_page' => 30 ] ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound -- two short pairs.
 
 		if ( is_wp_error( $data ) ) {
 			return $data;
 		}
 
 		$issues = [];
+		$wanted = array_map( 'mb_strtolower', $words );
 
-		foreach ( isset( $data['items'] ) && is_array( $data['items'] ) ? $data['items'] : [] as $item ) {
+		foreach ( isset( $data['items'] ) && is_array( $data['items'] ) ? $data['items'] : [] as $index => $item ) {
 			if ( isset( $item['number'], $item['title'], $item['html_url'] ) ) {
+				$shared   = count( array_intersect( $wanted, array_map( 'mb_strtolower', self::words( $item['title'] ) ) ) );
 				$issues[] = [
 					'number' => (int) $item['number'],
 					'title'  => (string) $item['title'],
 					'url'    => (string) $item['html_url'],
+					'rank'   => [ -$shared, $index ],
 				];
 			}
 		}
 
-		return $issues;
+		usort( $issues, [ self::class, 'by_rank' ] );
+
+		return array_map( [ self::class, 'without_rank' ], array_slice( $issues, 0, 5 ) );
+	}
+
+	/**
+	 * Sort order of similar issues: most shared words, then GitHub's order.
+	 *
+	 * @param array $a Issue.
+	 * @param array $b Issue.
+	 * @return int
+	 */
+	public static function by_rank( $a, $b ) {
+		return $a['rank'] <=> $b['rank'];
+	}
+
+	/**
+	 * An issue row without its sort key.
+	 *
+	 * @param array $issue Issue.
+	 * @return array
+	 */
+	public static function without_rank( $issue ) {
+		unset( $issue['rank'] );
+
+		return $issue;
 	}
 
 	/**
@@ -84,6 +139,41 @@ class GitHub {
 	}
 
 	/**
+	 * Add a comment to an issue.
+	 *
+	 * @param string $repo   Repository, "owner/name".
+	 * @param int    $number Issue number.
+	 * @param string $body   Comment, in Markdown.
+	 * @return array|\WP_Error The comment's `url`.
+	 */
+	public static function comment( $repo, $number, $body ) {
+		$data = self::request( 'POST', '/repos/' . $repo . '/issues/' . (int) $number . '/comments', [ 'body' => $body ] );
+
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+
+		return isset( $data['html_url'] ) ? [ 'url' => (string) $data['html_url'] ] : self::error( 0 );
+	}
+
+	/**
+	 * Whether the token can see a repository, asked when one is saved.
+	 *
+	 * @param string $repo Repository, "owner/name".
+	 * @return true|\WP_Error
+	 */
+	public static function check( $repo ) {
+		$data = self::request( 'GET', '/repos/' . $repo );
+
+		if ( is_wp_error( $data ) ) {
+			/* translators: 1: repository such as owner/name, 2: why it failed. */
+			return new \WP_Error( $data->get_error_code(), sprintf( __( '%1$s: %2$s', 'nhrrob-issue-reporter' ), $repo, $data->get_error_message() ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Whether an issue is open or closed.
 	 *
 	 * @param string $repo   Repository, "owner/name".
@@ -102,13 +192,15 @@ class GitHub {
 	 * @param string $what        What happened.
 	 * @param string $steps       Steps to reproduce.
 	 * @param string $environment Details about the site.
+	 * @param string $screenshots Images, in Markdown.
 	 * @return string
 	 */
-	public static function body( $what, $steps, $environment ) {
+	public static function body( $what, $steps, $environment, $screenshots = '' ) {
 		$parts    = [];
 		$sections = [
 			'What happened'      => $what,
 			'Steps to reproduce' => $steps,
+			'Screenshots'        => $screenshots,
 			'Environment'        => $environment,
 		];
 

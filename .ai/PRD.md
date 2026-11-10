@@ -29,20 +29,27 @@ I run my own plugins on my own sites. When one misbehaves I notice it in the das
 | The Environment box holds exactly what is sent | The plugin's own line is put into the box when a plugin is chosen, so nothing is added out of sight on the server. |
 | A personal access token, not "Sign in with GitHub" | One user, own repositories. OAuth needs a registered app and a callback, which only a public release justifies. |
 | The report's text is not stored | It is on GitHub. Storing it again would put support conversations into the options table. |
-| Abilities for AI agents and MCP, including one that writes | First left out because the only useful ability writes to GitHub. Added on 2026-10-16 so an agent can report for me through REST or MCP instead of running code on the site. Each ability runs the REST route the form uses, as the person logged in, so it checks and sends exactly what the form would. |
+| Abilities for AI agents and MCP, including ones that write | First left out because the only useful ability writes to GitHub. Added on 2026-10-16 so an agent can report for me through REST or MCP instead of running code on the site. Each ability runs the REST route the form uses, as the person logged in, so it checks and sends exactly what the form would. |
+
+## Added in 0.3.0
+
+Each was first left out; the decision log in `docs/DECISIONS.md` has why it came in.
+
+- **Themes, must-use plugins and other repositories** as targets (#6).
+- **Comments** on an existing issue: from a similar issue in the form, from the Sent tab, and as an ability (#12).
+- **Screenshots**, uploaded to the media library and linked, after a tick that the link shows the site's address (#5). GitHub's API has no upload endpoint for issue images, and committing them would need far more token power.
+- **A filter by plugin** on the Sent tab (#4).
 
 ## Left out on purpose
 
-- Screenshots and attachments (GitHub's API has no upload endpoint for issue images).
 - Labels, assignees and issue templates.
-- Comments on an existing issue from the dashboard.
 - Trackers other than GitHub.
-- Reporting on themes or on WordPress itself.
+- Reporting on WordPress itself.
+- A "Report issue" link on Appearance → Themes: that screen is drawn by JavaScript and has no filter for its links. Themes are reported from the form.
 - A network-wide screen on multisite; each site has its own settings and list.
 
 ## Candidates for a paid version
 
-- Screenshots, uploaded to the media library or a gist and linked.
 - Labels and issue templates per repository.
 - A report form for a client's users: they describe the problem, an admin reviews and sends it.
 - "Sign in with GitHub" in place of a pasted token.

@@ -5,6 +5,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import api from '../api';
+import { GROUPS } from './Report';
 import { useToast } from '../components/ToastProvider';
 import {
 	Button,
@@ -37,14 +38,22 @@ export default function Settings( { data, setData } ) {
 			.finally( () => setBusy( false ) );
 	};
 
+	const targets = data.plugins.filter( ( p ) => p.type !== 'repo' );
+	const extra = data.plugins
+		.filter( ( p ) => p.type === 'repo' )
+		.map( ( p ) => ( { label: p.name, repo: p.repo } ) );
+
 	// The server replaces the whole map, so every row is sent with the change.
 	const saveRepo = ( file, value ) => {
 		const repos = {};
-		data.plugins.forEach( ( p ) => {
+		targets.forEach( ( p ) => {
 			repos[ p.file ] = p.file === file ? value : p.repo;
 		} );
 		return save( { repos } );
 	};
+
+	// The same for the other repositories: the whole list is sent.
+	const saveExtra = ( rows, message ) => save( { extra: rows }, message );
 
 	let tokenPill = (
 		<Pill tone="warn">{ __( 'Not set', 'nhrrob-issue-reporter' ) }</Pill>
@@ -180,7 +189,10 @@ export default function Settings( { data, setData } ) {
 						<thead>
 							<tr>
 								<th scope="col">
-									{ __( 'Plugin', 'nhrrob-issue-reporter' ) }
+									{ __(
+										'Plugin or theme',
+										'nhrrob-issue-reporter'
+									) }
 								</th>
 								<th scope="col">
 									{ __(
@@ -194,7 +206,7 @@ export default function Settings( { data, setData } ) {
 							</tr>
 						</thead>
 						<tbody>
-							{ data.plugins.map( ( p ) => (
+							{ targets.map( ( p ) => (
 								<RepoRow
 									key={ p.file + '|' + p.repo }
 									plugin={ p }
@@ -205,7 +217,113 @@ export default function Settings( { data, setData } ) {
 					</table>
 				</div>
 			</Panel>
+
+			<Panel
+				title={ __( 'Other repositories', 'nhrrob-issue-reporter' ) }
+				icon="repo"
+			>
+				<p className={ P + 'muted' }>
+					{ __(
+						'Repositories that are not a plugin or theme on this site, such as an app it talks to. They are listed in the form under their label.',
+						'nhrrob-issue-reporter'
+					) }
+				</p>
+				{ extra.length > 0 && (
+					<ul className={ P + 'extra' }>
+						{ extra.map( ( row ) => (
+							<li key={ row.repo }>
+								<span>{ row.label }</span>
+								<span className="is-mono">{ row.repo }</span>
+								<Button
+									small
+									variant="danger"
+									disabled={ busy }
+									onClick={ () =>
+										saveExtra(
+											extra.filter(
+												( r ) => r.repo !== row.repo
+											),
+											__(
+												'Repository removed',
+												'nhrrob-issue-reporter'
+											)
+										)
+									}
+								>
+									{ __( 'Remove', 'nhrrob-issue-reporter' ) }
+								</Button>
+							</li>
+						) ) }
+					</ul>
+				) }
+				<ExtraForm
+					busy={ busy }
+					onAdd={ ( row ) =>
+						saveExtra(
+							[ ...extra, row ],
+							__( 'Repository added', 'nhrrob-issue-reporter' )
+						)
+					}
+				/>
+			</Panel>
 		</>
+	);
+}
+
+function ExtraForm( { busy, onAdd } ) {
+	const [ label, setLabel ] = useState( '' );
+	const [ repo, setRepo ] = useState( '' );
+
+	return (
+		<form
+			className={ P + 'inline' }
+			onSubmit={ ( event ) => {
+				event.preventDefault();
+				onAdd( { label, repo } ).then( ( ok ) => {
+					if ( ok ) {
+						setLabel( '' );
+						setRepo( '' );
+					}
+				} );
+			} }
+		>
+			<div className={ P + 'inline__row' }>
+				<Field
+					id={ P + 'extra-label' }
+					label={ __( 'Label', 'nhrrob-issue-reporter' ) }
+				>
+					<input
+						id={ P + 'extra-label' }
+						className={ P + 'input' }
+						type="text"
+						maxLength={ 100 }
+						value={ label }
+						onChange={ ( e ) => setLabel( e.target.value ) }
+					/>
+				</Field>
+				<Field
+					id={ P + 'extra-repo' }
+					label={ __( 'Repository', 'nhrrob-issue-reporter' ) }
+				>
+					<input
+						id={ P + 'extra-repo' }
+						className={ P + 'input is-mono' }
+						type="text"
+						placeholder="owner/name"
+						required
+						value={ repo }
+						onChange={ ( e ) => setRepo( e.target.value ) }
+					/>
+				</Field>
+				<Button
+					variant="primary"
+					type="submit"
+					disabled={ busy || ! repo.trim() }
+				>
+					{ __( 'Add', 'nhrrob-issue-reporter' ) }
+				</Button>
+			</div>
+		</form>
 	);
 }
 
@@ -232,7 +350,10 @@ function RepoRow( { plugin, onSave } ) {
 		<tr>
 			<td className="is-wrap">
 				<label htmlFor={ id }>{ plugin.name }</label>
-				<div className={ P + 'sub' }>{ plugin.version }</div>
+				<div className={ P + 'sub' }>
+					{ GROUPS.find( ( g ) => g[ 0 ] === plugin.type )[ 1 ] }
+					{ plugin.version && ' · ' + plugin.version }
+				</div>
 			</td>
 			<td>
 				<input
