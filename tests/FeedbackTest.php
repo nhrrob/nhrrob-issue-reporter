@@ -38,6 +38,11 @@ class FeedbackTest extends TestCase {
 			}
 		);
 		WP_Mock::userFunction( 'wp_update_post' )->once();
+		// wp_insert_post() and update_post_meta() unslash, and kses would strip the <b>.
+		WP_Mock::userFunction( 'wp_slash' )->twice()->andReturnArg( 0 );
+		WP_Mock::userFunction( 'has_filter' )->with( 'content_save_pre', 'wp_filter_post_kses' )->andReturn( 10 );
+		WP_Mock::userFunction( 'kses_remove_filters' )->once();
+		WP_Mock::userFunction( 'kses_init_filters' )->once();
 
 		$id = Store::create(
 			[

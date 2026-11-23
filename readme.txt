@@ -32,13 +32,6 @@ It is self-hosted: feedback and screenshots stay on your site, and nothing goes 
 ### Which repository
 A plugin's repository is read from its header: `GitHub Plugin URI`, or a `Plugin URI` or `Update URI` on github.com. A theme's from `GitHub Theme URI`, or a `Theme URI` or `Update URI` on github.com. For anything else, set it under **Settings → Repositories** as `owner/name` or a github.com address; it is checked with GitHub when saved.
 
-### Setting it up
-1. Under **Tools → Report Issue → Settings → GitHub**, click **Connect GitHub** and enter the code on github.com. Or create a token with **Create a token on GitHub** (one permission: "Issues: Read and write") and paste it, or add it to `wp-config.php`: `define( 'NHRROB_ISSUE_REPORTER_TOKEN', 'your token' );`.
-2. Under **Settings → Repositories**, fill in the repository of each plugin or theme that does not name one itself.
-3. For client feedback, switch on the widget under **Settings → Client widget** and choose who sees it.
-
-Only users who can activate plugins can send reports to GitHub, read the Inbox or change the settings. Developers can change that with the `nhrrob_issue_reporter_capability` filter.
-
 ### For AI agents and MCP clients
 On WordPress 6.9 and later the plugin registers four abilities, for the Abilities API's REST routes (`/wp-json/wp-abilities/v1/`) or the MCP Adapter plugin:
 
@@ -55,6 +48,14 @@ Each runs the same code as the form, as the person who is logged in. For a plugi
 - `nhrrob_issue_reporter_sent` and `nhrrob_issue_reporter_feedback_created`: after a report is opened, and after feedback arrives.
 - `nhrrob_issue_reporter_state` and `nhrrob_issue_reporter_enqueue`, with the `nhrrobIssueReporter.app` JavaScript filter: add screens to the app.
 - `nhrrob_issue_reporter_client_id`: use your own GitHub OAuth App for Connect GitHub.
+
+== Installation ==
+1. Install the plugin from Plugins → Add New, or upload the zip, and activate it.
+2. Under **Tools → Report Issue → Settings → GitHub**, click **Connect GitHub** and enter the code on github.com. Or create a token with **Create a token on GitHub** (one permission: "Issues: Read and write") and paste it, or add it to `wp-config.php`: `define( 'NHRROB_ISSUE_REPORTER_TOKEN', 'your token' );`.
+3. Under **Settings → Repositories**, fill in the repository of each plugin or theme that does not name one itself.
+4. For client feedback, switch on the widget under **Settings → Client widget** and choose who sees it.
+
+Only users who can activate plugins can send reports to GitHub, read the Inbox or change the settings. Developers can change that with the `nhrrob_issue_reporter_capability` filter.
 
 == External services ==
 This plugin connects to GitHub, a service of GitHub, Inc., only when a user who can activate plugins acts in its screen or runs one of its abilities. Feedback from the widget is stored on your site and sent nowhere until such a user sends it to GitHub.

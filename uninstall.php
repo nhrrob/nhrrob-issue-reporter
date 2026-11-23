@@ -20,6 +20,16 @@ function nhrrob_issue_reporter_uninstall_site() {
 		delete_option( $option );
 	}
 
+	// "Connect GitHub" codes still waiting, one per user: nhrrob_issue_reporter_device_<user id>.
+	global $wpdb;
+	$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- once, on uninstall; transients have no API to delete by prefix.
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			$wpdb->esc_like( '_transient_nhrrob_issue_reporter_device_' ) . '%',
+			$wpdb->esc_like( '_transient_timeout_nhrrob_issue_reporter_device_' ) . '%'
+		)
+	);
+
 	$nhrrob_issue_reporter_shots = get_posts(
 		[
 			'post_type'      => 'attachment',
