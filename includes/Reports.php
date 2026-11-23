@@ -57,6 +57,12 @@ class Reports {
 			'checked' => time(),
 		];
 
+		// An issue in another tracker, whose state comes from the nhrrob_issue_reporter_issue_state filter.
+		if ( ! empty( $issue['tracker'] ) ) {
+			$row['tracker'] = sanitize_key( (string) $issue['tracker'] );
+			$row['ref']     = isset( $issue['ref'] ) ? mb_substr( sanitize_text_field( (string) $issue['ref'] ), 0, 100 ) : '';
+		}
+
 		array_unshift( $rows, $row );
 		update_option( self::OPTION, array_slice( $rows, 0, self::MAX ), false );
 
@@ -102,7 +108,19 @@ class Reports {
 				continue;
 			}
 
-			$state = GitHub::state( $row['repo'], $row['number'] );
+			if ( empty( $row['tracker'] ) ) {
+				$state = GitHub::state( $row['repo'], $row['number'] );
+			} else {
+				/**
+				 * The state of an issue in another tracker: "open", "closed",
+				 * or "" when it is not known.
+				 *
+				 * @param string $state "".
+				 * @param array  $row   The Sent row, with `tracker` and `ref`.
+				 */
+				$state = (string) apply_filters( 'nhrrob_issue_reporter_issue_state', '', $row );
+				$state = in_array( $state, [ 'open', 'closed' ], true ) ? $state : '';
+			}
 
 			$rows[ $index ]['checked'] = time();
 			$rows[ $index ]['state']   = '' !== $state ? $state : $row['state'];

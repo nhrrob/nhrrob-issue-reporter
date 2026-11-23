@@ -160,6 +160,20 @@ class Repos {
 			];
 		}
 
+		/**
+		 * The places a report can go. Another plugin can give a target a
+		 * `route`: a short label such as "Jira · ACME". A target with a route
+		 * goes through `nhrrob_issue_reporter_pre_send`, never to GitHub, and
+		 * needs no repository.
+		 *
+		 * @param array $targets Targets by key.
+		 */
+		$targets = (array) apply_filters( 'nhrrob_issue_reporter_targets', $targets );
+
+		foreach ( $targets as $key => $target ) {
+			$targets[ $key ]['route'] = isset( $target['route'] ) && is_string( $target['route'] ) ? mb_substr( sanitize_text_field( $target['route'] ), 0, 80 ) : '';
+		}
+
 		return $targets;
 	}
 
@@ -189,7 +203,7 @@ class Repos {
 
 		$target = $targets[ $key ];
 
-		if ( '' !== $target['repo'] ) {
+		if ( '' !== $target['repo'] || '' !== $target['route'] ) {
 			return $target;
 		}
 

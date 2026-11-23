@@ -85,4 +85,32 @@ class ReportsTest extends TestCase {
 		Reports::refresh();
 		$this->assertTrue( true );
 	}
+
+	public function testAnIssueInAnotherTrackerAsksTheFilterNotGitHub() {
+		$row            = $this->row( 7, 'open', 0 );
+		$row['tracker'] = 'jira';
+		$row['ref']     = 'ACME-7';
+		WP_Mock::userFunction( 'get_option' )->with( Reports::OPTION, [] )->andReturn( [ $row ] );
+		WP_Mock::onFilter( 'nhrrob_issue_reporter_issue_state' )->with( '', $row )->reply( 'closed' );
+		WP_Mock::userFunction( 'update_option' )->once()->andReturnUsing(
+			function ( $option, $rows ) {
+				$this->assertSame( 'closed', $rows[0]['state'] );
+				return true;
+			}
+		);
+
+		Reports::refresh();
+	}
+
+	public function testAnIssueInAnotherTrackerKeepsItsTrackerAndReference() {
+		WP_Mock::userFunction( 'get_option' )->with( Reports::OPTION, [] )->andReturn( [] );
+		WP_Mock::userFunction( 'sanitize_key' )->andReturnUsing( 'strtolower' );
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturnArg( 0 );
+		WP_Mock::userFunction( 'update_option' )->once();
+
+		$row = Reports::add( 'Plugin', 'Jira · ACME', [ 'number' => 7, 'url' => 'https://acme.atlassian.net/browse/ACME-7', 'tracker' => 'Jira', 'ref' => 'ACME-7' ], 'New' );
+
+		$this->assertSame( 'jira', $row['tracker'] );
+		$this->assertSame( 'ACME-7', $row['ref'] );
+	}
 }

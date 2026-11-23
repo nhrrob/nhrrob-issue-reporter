@@ -19,6 +19,7 @@ import {
 	SearchBox,
 	Segmented,
 } from '../components/ui';
+import HubSettings from './HubSettings';
 import WidgetSettings from './WidgetSettings';
 
 const P = 'nhrrob-issue-reporter-';
@@ -74,6 +75,13 @@ export default function Settings( { boot, data, setData } ) {
 							? __( 'On', 'nhrrob-issue-reporter' )
 							: '',
 					],
+					[
+						'hub',
+						__( 'Agency hub', 'nhrrob-issue-reporter' ),
+						data.hub && data.hub.connected
+							? __( 'On', 'nhrrob-issue-reporter' )
+							: '',
+					],
 				].map( ( [ id, label, badge ] ) => (
 					<button
 						key={ id }
@@ -109,6 +117,9 @@ export default function Settings( { boot, data, setData } ) {
 			) }
 			{ tab === 'widget' && (
 				<WidgetSettings data={ data } busy={ busy } save={ save } />
+			) }
+			{ tab === 'hub' && (
+				<HubSettings data={ data } setData={ setData } />
 			) }
 		</>
 	);

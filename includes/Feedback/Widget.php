@@ -44,13 +44,20 @@ class Widget {
 	public static function can_send() {
 		$widget = Settings::get()['widget'];
 
-		if ( ! $widget['enabled'] || ! is_user_logged_in() ) {
+		if ( ! $widget['enabled'] ) {
 			return false;
 		}
 
-		$user = wp_get_current_user();
+		$allowed = is_user_logged_in() && (bool) array_intersect( (array) wp_get_current_user()->roles, $widget['roles'] );
 
-		return (bool) array_intersect( (array) $user->roles, $widget['roles'] );
+		/**
+		 * Whether the current visitor may use the feedback widget. Another
+		 * plugin can allow someone without one of the chosen roles, or
+		 * without an account. Only asked while the widget is switched on.
+		 *
+		 * @param bool $allowed Whether the visitor is logged in with one of the chosen roles.
+		 */
+		return (bool) apply_filters( 'nhrrob_issue_reporter_can_send', $allowed );
 	}
 
 	/**

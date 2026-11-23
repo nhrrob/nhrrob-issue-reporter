@@ -190,4 +190,47 @@ class RestTest extends TestCase {
 
 		( new Rest() )->send( $this->request( [ 'plugin' => 'p/p.php', 'title' => 'T', 'what' => 'W', 'labels' => [ 'bug', 'severity: minor' ] ] ) );
 	}
+
+	private function routeQ() {
+		$plain = [
+			'p/p.php' => [ 'type' => 'plugin', 'name' => 'P', 'version' => '1', 'repo' => 'me/p', 'detected' => 'me/p' ],
+			'q/q.php' => [ 'type' => 'plugin', 'name' => 'Q', 'version' => '1', 'repo' => '', 'detected' => '' ],
+		];
+		$routed                     = $plain;
+		$routed['q/q.php']['route'] = 'Jira · ACME';
+		WP_Mock::onFilter( 'nhrrob_issue_reporter_targets' )->with( $plain )->reply( $routed );
+	}
+
+	public function testAReportWithARouteNeverGoesToGitHub() {
+		$this->site();
+		$this->routeQ();
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturnUsing( 'trim' );
+		WP_Mock::userFunction( 'wp_remote_request' )->never();
+
+		$this->assertInstanceOf( \WP_Error::class, ( new Rest() )->send( $this->request( [ 'plugin' => 'q/q.php', 'title' => 'T', 'what' => 'W' ] ) ) );
+		$this->assertInstanceOf( \WP_Error::class, ( new Rest() )->comment( $this->request( [ 'plugin' => 'q/q.php', 'number' => 3, 'body' => 'B' ] ) ) );
+		$this->assertSame( [ 'issues' => [] ], ( new Rest() )->similar( $this->request( [ 'plugin' => 'q/q.php', 'title' => 'Broken' ] ) ) );
+	}
+
+	public function testAReportWithARouteIsListedUnderItsRoute() {
+		$this->site();
+		$this->routeQ();
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturnUsing( 'trim' );
+		WP_Mock::userFunction( 'sanitize_key' )->andReturnUsing( 'strtolower' );
+		WP_Mock::userFunction( 'update_option' )->andReturn( true );
+		$target = [ 'type' => 'plugin', 'name' => 'Q', 'version' => '1', 'repo' => '', 'detected' => '', 'route' => 'Jira · ACME' ];
+		WP_Mock::onFilter( 'nhrrob_issue_reporter_pre_send' )->with( null, $target, 'T', \NHRRob\IssueReporter\GitHub::body( 'W', '', '' ), [] )->reply(
+			[
+				'number'  => 7,
+				'url'     => 'https://acme.atlassian.net/browse/ACME-7',
+				'tracker' => 'jira',
+				'ref'     => 'ACME-7',
+			]
+		);
+
+		$answer = ( new Rest() )->send( $this->request( [ 'plugin' => 'q/q.php', 'title' => 'T', 'what' => 'W' ] ) );
+
+		$this->assertSame( 'Jira · ACME', $answer['report']['repo'] );
+		$this->assertSame( 'ACME-7', $answer['report']['ref'] );
+	}
 }

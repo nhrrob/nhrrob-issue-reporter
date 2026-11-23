@@ -96,7 +96,10 @@ export default function InboxItem( {
 	navigate,
 } ) {
 	const toast = useToast();
-	const targets = data.plugins.filter( ( p ) => p.repo );
+	// A target with a route goes to another tracker and needs no GitHub token.
+	const targets = data.plugins.filter(
+		( p ) => p.route || ( p.repo && data.hasToken )
+	);
 	const [ file, setFile ] = useState( '' );
 	const [ title, setTitle ] = useState( firstSentence( item.text ) );
 	const [ text, setText ] = useState( item.text );
@@ -143,6 +146,17 @@ export default function InboxItem( {
 		api( '/feedback/' + item.id, 'POST', fields )
 			.then( ( answer ) => onChange( answer.item ) )
 			.catch( ( e ) => toast( e.message || String( e ), 'error' ) );
+
+	const toHub = () => {
+		setBusy( true );
+		api( '/hub/send', 'POST', { id: item.id } )
+			.then( ( answer ) => {
+				onChange( answer.item );
+				toast( __( 'Sent to the agency', 'nhrrob-issue-reporter' ) );
+			} )
+			.catch( ( e ) => toast( e.message || String( e ), 'error' ) )
+			.finally( () => setBusy( false ) );
+	};
 
 	const send = () => {
 		if ( ! file || ! title.trim() || ! text.trim() || busy ) {
@@ -210,6 +224,11 @@ export default function InboxItem( {
 					<External href={ item.issue.url }>
 						{ item.issue.repo + '#' + item.issue.number }
 					</External>
+				) }
+				{ item.hub > 0 && (
+					<span className={ P + 'pill ' + P + 'pill--info' }>
+						{ __( 'Sent to agency', 'nhrrob-issue-reporter' ) }
+					</span>
 				) }
 			</header>
 
@@ -309,9 +328,12 @@ export default function InboxItem( {
 				{ item.status !== 'sent' && (
 					<div className={ P + 'inbox__send' }>
 						<h3>
-							{ __( 'Send to GitHub', 'nhrrob-issue-reporter' ) }
+							{ __(
+								'Send as an issue',
+								'nhrrob-issue-reporter'
+							) }
 						</h3>
-						{ targets.length === 0 || ! data.hasToken ? (
+						{ targets.length === 0 ? (
 							<p className={ P + 'muted' }>
 								{ __(
 									'Connect GitHub and set a repository in Settings to send feedback as an issue.',
@@ -332,7 +354,7 @@ export default function InboxItem( {
 								<Field
 									id={ P + 'inbox-to' }
 									label={ __(
-										'Repository',
+										'Send to',
 										'nhrrob-issue-reporter'
 									) }
 								>
@@ -469,27 +491,27 @@ export default function InboxItem( {
 						{ __( 'Mark done', 'nhrrob-issue-reporter' ) }
 					</Button>
 				) }
-				{ item.status !== 'sent' &&
-					targets.length > 0 &&
-					data.hasToken && (
-						<Button
-							variant="primary"
-							onClick={ send }
-							disabled={
-								busy ||
-								! file ||
-								! title.trim() ||
-								! text.trim()
-							}
-						>
-							{ busy
-								? __( 'Sending…', 'nhrrob-issue-reporter' )
-								: __(
-										'Send to GitHub',
-										'nhrrob-issue-reporter'
-								  ) }
-						</Button>
-					) }
+				{ data.hub && data.hub.connected && ! item.hub && (
+					<Button disabled={ busy } onClick={ toHub }>
+						{ __( 'Send to agency', 'nhrrob-issue-reporter' ) }
+					</Button>
+				) }
+				{ item.status !== 'sent' && targets.length > 0 && (
+					<Button
+						variant="primary"
+						onClick={ send }
+						disabled={
+							busy || ! file || ! title.trim() || ! text.trim()
+						}
+					>
+						{ busy
+							? __( 'Sending…', 'nhrrob-issue-reporter' )
+							: __(
+									'Send as an issue',
+									'nhrrob-issue-reporter'
+							  ) }
+					</Button>
+				) }
 			</footer>
 		</section>
 	);

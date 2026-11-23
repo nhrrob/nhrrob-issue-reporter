@@ -4,7 +4,7 @@ Tags: feedback, bug report, uat, client feedback, github
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.5.0
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,9 @@ Each runs the same code as the form, as the person who is logged in. For a plugi
 - `nhrrob_issue_reporter_sent` and `nhrrob_issue_reporter_feedback_created`: after a report is opened, and after feedback arrives.
 - `nhrrob_issue_reporter_state` and `nhrrob_issue_reporter_enqueue`, with the `nhrrobIssueReporter.app` JavaScript filter: add screens to the app.
 - `nhrrob_issue_reporter_client_id`: use your own GitHub OAuth App for Connect GitHub.
+- `nhrrob_issue_reporter_can_send`: let more people use the feedback widget.
+- `nhrrob_issue_reporter_feedback_row`: change a piece of feedback as the Inbox shows it.
+- `nhrrob_issue_reporter_targets`: give a plugin or theme a `route`, so its reports go through `nhrrob_issue_reporter_pre_send` to another tracker instead of GitHub; `nhrrob_issue_reporter_issue_state` then says whether those issues are open or closed.
 
 == Installation ==
 1. Install the plugin from Plugins → Add New, or upload the zip, and activate it.
@@ -79,6 +82,13 @@ Nothing is sent to GitHub in the background or for visitors.
 - [GitHub Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service)
 - [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
 
+An agency hub, only after you paste a hub key under Settings → Agency hub. The hub is another WordPress site, run by the agency that gave you the key, not a service of ours:
+
+- connecting: the key's token, your site's address and name, and the plugin's version, to receive this site's own secret;
+- "Send to agency" in the Inbox, or each new piece of feedback when you switch that on: its text, kind, severity, page, browser, screen size, console errors, the reporter's display name, and the screenshot. Signed with the secret.
+
+Nothing goes to the hub before you connect, and Disconnect forgets it. What the agency does with the feedback is up to the agency.
+
 == Frequently Asked Questions ==
 
 = Who can send feedback with the widget? =
@@ -98,6 +108,8 @@ Yes, when its repository is on GitHub and your connection may open issues there.
 
 = What does "Connect GitHub" have access to? =
 Your public repositories, or also your private ones if you tick that box. A token you create yourself can be limited to chosen repositories and the one permission the plugin needs.
+
+GitHub's approval page names the app "NHR Issue Reporter" by nhrrob. Approve it only right after clicking Connect GitHub on your own site: anyone can show that page, so a link to it from somewhere else is not this plugin.
 
 = Where is the token stored? =
 In `wp-config.php` if you define `NHRROB_ISSUE_REPORTER_TOKEN` there, which is the safer place. Otherwise in the database, in an option that is not autoloaded. It is never printed in a page or sent anywhere but api.github.com.
@@ -122,6 +134,12 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 7. The dark theme.
 
 == Changelog ==
+
+= 0.6.0 =
+* New: Agency hub. An agency that looks after the site can give a key; feedback then goes to its own WordPress site, from the Inbox ("Send to agency") or as it arrives. Settings → Agency hub.
+* Better: the Connect GitHub screen and the FAQ say what GitHub's approval page shows, so it can be told apart from a copy.
+* Developers: the nhrrob_issue_reporter_can_send, nhrrob_issue_reporter_feedback_row, nhrrob_issue_reporter_targets and nhrrob_issue_reporter_issue_state filters. A plugin or theme can be routed to another tracker; it then needs no GitHub repository or token, and is never sent to GitHub.
+* Better: the Inbox says "Send as an issue", since an issue may go somewhere other than GitHub.
 
 = 0.5.0 =
 * New: the feedback widget. A "Report an issue" item in the admin bar on the site and in the dashboard, and a floating Feedback button on the site, for the roles you choose.

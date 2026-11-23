@@ -275,6 +275,10 @@ class Rest {
 			return $plugin;
 		}
 
+		if ( '' !== $plugin['route'] ) {
+			return [ 'issues' => [] ]; // Its tracker is not searched.
+		}
+
 		$issues = GitHub::similar( $plugin['repo'], self::line( $request->get_param( 'title' ) ) );
 
 		return is_wp_error( $issues ) ? $this->refused( $issues ) : [ 'issues' => $issues ];
@@ -323,7 +327,9 @@ class Rest {
 
 		/**
 		 * Send a report somewhere else than GitHub. Return the new issue's
-		 * `number` and `url`, or a WP_Error; null lets GitHub have it.
+		 * `number` and `url` (and `tracker` and `ref` to look its state up
+		 * later), or a WP_Error; null lets GitHub have it, unless the target
+		 * has a route.
 		 *
 		 * @param array|\WP_Error|null $issue  Null.
 		 * @param array                $target The target, as Repos::all() returns it.
@@ -333,7 +339,7 @@ class Rest {
 		 */
 		$issue = apply_filters( 'nhrrob_issue_reporter_pre_send', null, $plugin, $title, $body, $labels );
 
-		if ( null === $issue ) {
+		if ( null === $issue && '' === $plugin['route'] ) {
 			$issue = GitHub::create( $plugin['repo'], $title, $body, $labels );
 		}
 
@@ -345,7 +351,7 @@ class Rest {
 			return new \WP_Error( 'nhrrob_issue_reporter_not_sent', __( 'The report was not sent. Please try again.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
 		}
 
-		$report = Reports::add( $plugin['name'], $plugin['repo'], $issue, $title );
+		$report = Reports::add( $plugin['name'], '' !== $plugin['route'] ? $plugin['route'] : $plugin['repo'], $issue, $title );
 
 		/**
 		 * After a report was opened. The Inbox marks its feedback as sent here.
@@ -430,6 +436,11 @@ class Rest {
 
 		if ( is_wp_error( $plugin ) ) {
 			return $plugin;
+		}
+
+		if ( '' !== $plugin['route'] ) {
+			/* translators: %s: where the plugin's reports go, such as "Jira · ACME". */
+			return new \WP_Error( 'nhrrob_issue_reporter_routed', sprintf( __( 'Reports about this go to %s; add a comment there.', 'nhrrob-issue-reporter' ), $plugin['route'] ), [ 'status' => 400 ] );
 		}
 
 		$images = $this->screenshots( $request );
