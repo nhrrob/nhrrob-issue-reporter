@@ -1,13 +1,14 @@
 /**
- * App shell: gradient app bar, collapsible left nav and the content slot.
+ * App shell: a sidebar with the sections grouped, the GitHub connection card,
+ * and a top bar with where you are and the theme switch.
  */
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import { Icon } from './ui';
 
+const P = 'nhrrob-issue-reporter-';
 const THEME_KEY = 'nhrrob-issue-reporter-theme';
-const NAV_KEY = 'nhrrob-issue-reporter-nav';
 
 function remember( key, value ) {
 	try {
@@ -17,14 +18,24 @@ function remember( key, value ) {
 	}
 }
 
+/**
+ * @param {Object}   root0            Props.
+ * @param {Array}    root0.groups     Rows of { label, items: [ { id, label, icon, count } ] }.
+ * @param {string}   root0.active     The open section.
+ * @param {Function} root0.onNavigate Called with a section id.
+ * @param {string}   root0.title      The app's name.
+ * @param {Object}   root0.connection { ok, line } for the card at the bottom.
+ * @param {Object}   root0.children   The open screen.
+ * @return {Object} Shell element.
+ */
 export default function AppShell( {
-	modules,
+	groups,
 	active,
 	onNavigate,
 	title,
+	connection,
 	children,
 } ) {
-	const [ collapsed, setCollapsed ] = useState( false );
 	const [ theme, setTheme ] = useState( '' ); // '' follows the system setting
 
 	useEffect( () => {
@@ -33,9 +44,6 @@ export default function AppShell( {
 			if ( saved === 'dark' || saved === 'light' ) {
 				setTheme( saved );
 			}
-			setCollapsed(
-				window.localStorage.getItem( NAV_KEY ) === 'collapsed'
-			);
 		} catch ( e ) {
 			/* storage unavailable */
 		}
@@ -46,98 +54,138 @@ export default function AppShell( {
 		window.matchMedia( '(prefers-color-scheme: dark)' ).matches;
 	const isDark = theme ? theme === 'dark' : prefersDark;
 
-	return (
-		<div
-			className={
-				'nhrrob-issue-reporter-app' +
-				( collapsed ? ' is-collapsed' : '' )
+	let current = null;
+	groups.forEach( ( g ) =>
+		g.items.forEach( ( i ) => {
+			if ( i.id === active ) {
+				current = { group: g.label, label: i.label };
 			}
-			data-theme={ theme || undefined }
-		>
-			<header className="nhrrob-issue-reporter-bar">
-				<button
-					type="button"
-					className="nhrrob-issue-reporter-bar__btn"
-					aria-label={
-						collapsed
-							? __( 'Expand menu', 'nhrrob-issue-reporter' )
-							: __( 'Collapse menu', 'nhrrob-issue-reporter' )
-					}
-					onClick={ () => {
-						remember(
-							NAV_KEY,
-							collapsed ? 'expanded' : 'collapsed'
-						);
-						setCollapsed( ! collapsed );
-					} }
-				>
-					<Icon name="menu" />
-				</button>
-				<span className="nhrrob-issue-reporter-bar__mark">
-					<Icon name="bug" />
-				</span>
-				<span className="nhrrob-issue-reporter-bar__title">
-					{ title }
-				</span>
-				<span className="nhrrob-issue-reporter-bar__spacer" />
-				<button
-					type="button"
-					className="nhrrob-issue-reporter-bar__btn"
-					aria-label={
-						isDark
-							? __(
-									'Switch to light theme',
-									'nhrrob-issue-reporter'
-							  )
-							: __(
-									'Switch to dark theme',
-									'nhrrob-issue-reporter'
-							  )
-					}
-					onClick={ () => {
-						const next = isDark ? 'light' : 'dark';
-						remember( THEME_KEY, next );
-						setTheme( next );
-					} }
-				>
-					<Icon name={ isDark ? 'sun' : 'moon' } />
-				</button>
-			</header>
+		} )
+	);
 
-			<div className="nhrrob-issue-reporter-body">
-				<nav className="nhrrob-issue-reporter-nav" aria-label={ title }>
-					{ modules.map( ( m ) => (
-						<button
-							key={ m.id }
-							type="button"
-							className={
-								'nhrrob-issue-reporter-nav__item' +
-								( m.id === active ? ' is-active' : '' ) +
-								( m.id === 'settings' ? ' is-last' : '' )
-							}
-							aria-current={
-								m.id === active ? 'page' : undefined
-							}
-							title={ m.label }
-							onClick={ () => onNavigate( m.id ) }
-						>
-							<Icon name={ m.id } />
-							<span className="nhrrob-issue-reporter-nav__label">
-								{ m.label }
-							</span>
-							{ m.count > 0 && (
-								<span className="nhrrob-issue-reporter-nav__count">
-									{ m.count }
+	return (
+		<div className={ P + 'app' } data-theme={ theme || undefined }>
+			<aside className={ P + 'side' }>
+				<div className={ P + 'brand' }>
+					<span className={ P + 'brand__mark' }>
+						<Icon name="bug" />
+					</span>
+					<span className={ P + 'brand__text' }>
+						<strong>{ title }</strong>
+						<span>
+							{ __( 'This site', 'nhrrob-issue-reporter' ) }
+						</span>
+					</span>
+				</div>
+
+				{ groups.map( ( g ) => (
+					<nav
+						key={ g.label }
+						className={ P + 'nav' }
+						aria-label={ g.label }
+					>
+						<span className={ P + 'nav__label' }>{ g.label }</span>
+						{ g.items.map( ( m ) => (
+							<button
+								key={ m.id }
+								type="button"
+								className={
+									P +
+									'nav__item' +
+									( m.id === active ? ' is-active' : '' )
+								}
+								aria-current={
+									m.id === active ? 'page' : undefined
+								}
+								onClick={ () => onNavigate( m.id ) }
+							>
+								<Icon name={ m.icon } size={ 17 } />
+								<span className={ P + 'nav__text' }>
+									{ m.label }
 								</span>
+								{ m.count > 0 && (
+									<span className={ P + 'nav__count' }>
+										{ m.count }
+									</span>
+								) }
+							</button>
+						) ) }
+					</nav>
+				) ) }
+
+				{ connection && (
+					<button
+						type="button"
+						className={ P + 'conn' }
+						onClick={ () => onNavigate( 'settings' ) }
+					>
+						<span className={ P + 'conn__head' }>
+							<span
+								className={
+									P +
+									'conn__dot' +
+									( connection.ok ? ' is-ok' : '' )
+								}
+							/>
+							{ connection.ok
+								? __(
+										'GitHub connected',
+										'nhrrob-issue-reporter'
+								  )
+								: __(
+										'GitHub not connected',
+										'nhrrob-issue-reporter'
+								  ) }
+						</span>
+						<span className={ P + 'conn__line' }>
+							{ connection.line }
+						</span>
+					</button>
+				) }
+			</aside>
+
+			<div className={ P + 'main' }>
+				<div className={ P + 'top' }>
+					{ current && (
+						<nav
+							className={ P + 'crumbs' }
+							aria-label={ __(
+								'Breadcrumb',
+								'nhrrob-issue-reporter'
 							) }
-						</button>
-					) ) }
-				</nav>
-				<main className="nhrrob-issue-reporter-content">
-					<div className="nhrrob-issue-reporter-screen">
-						{ children }
-					</div>
-				</main>
+						>
+							<span>{ current.group }</span>
+							<span aria-hidden="true">/</span>
+							<span className={ P + 'crumbs__here' }>
+								{ current.label }
+							</span>
+						</nav>
+					) }
+					<span className={ P + 'top__spacer' } />
+					<button
+						type="button"
+						className={ P + 'iconbtn' }
+						aria-label={
+							isDark
+								? __(
+										'Switch to light theme',
+										'nhrrob-issue-reporter'
+								  )
+								: __(
+										'Switch to dark theme',
+										'nhrrob-issue-reporter'
+								  )
+						}
+						onClick={ () => {
+							const next = isDark ? 'light' : 'dark';
+							remember( THEME_KEY, next );
+							setTheme( next );
+						} }
+					>
+						<Icon name={ isDark ? 'sun' : 'moon' } size={ 16 } />
+					</button>
+				</div>
+				<main className={ P + 'content' }>{ children }</main>
 			</div>
 		</div>
 	);

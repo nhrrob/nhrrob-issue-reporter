@@ -1,27 +1,38 @@
 /**
- * Shared building blocks: icons, panels, buttons, pills, fields and notes.
- * Hand-rolled on purpose — no component or icon library enters the bundle.
+ * Shared building blocks: icons, cards, buttons, pills, fields, segmented
+ * controls, switches and notes. Hand-rolled on purpose — no component or icon
+ * library enters the bundle. The look is described in .ai/DESIGN.md.
  */
 const P = 'nhrrob-issue-reporter-';
 
 const PATHS = {
-	menu: 'M4 6h16M4 12h16M4 18h16',
-	bug: 'M8 7a4 4 0 018 0M6 10h12v5a6 6 0 01-12 0zM12 10v11M3 13h3M18 13h3M4 6l3 4M20 6l-3 4M4 21l3-3M20 21l-3-3',
-	moon: 'M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z',
+	bug: 'M9 7.1V6a3 3 0 116 0v1.1M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 014-4h4a4 4 0 014 4v3c0 3.3-2.7 6-6 6zM12 20v-9M6 13H2M22 13h-4',
+	moon: 'M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z',
 	sun: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
-	report: 'M5 21V4h9l1 2h5v9h-6l-1-2H5',
-	sent: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+	plus: 'M12 5v14M5 12h14',
+	send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
 	settings:
-		'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM9 12a3 3 0 106 0 3 3 0 00-6 0',
-	alert: 'M12 4l9 16H3zM12 10v4M12 17h.01',
+		'M12 15a3 3 0 100-6 3 3 0 000 6zM12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+	alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z',
 	info: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 11v5M12 8h.01',
-	check: 'M5 12.5l4.5 4.5L19 7.5',
-	key: 'M12 15a4 4 0 11-8 0 4 4 0 018 0zM11 12l9-9M16 7l3 3',
-	repo: 'M6 3h12v15H7.5a1.5 1.5 0 000 3H18M6 3v16.5M10 7h5',
+	check: 'M20 6L9 17l-5-5',
+	dot: 'M12 4a8 8 0 100 16 8 8 0 000-16zM12 12h.01',
+	link: 'M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7',
+	repo: 'M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5v14z',
+	plugin: 'M9 2v6M15 2v6M6 8h12v4a6 6 0 01-12 0V8zM12 18v4',
+	theme: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5',
 	search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4',
-	external:
-		'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
-	refresh: 'M20 11a8 8 0 00-14.9-3M4 5v3h3M4 13a8 8 0 0014.9 3M20 19v-3h-3',
+	external: 'M7 17L17 7M8 7h9v9',
+	refresh: 'M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5',
+	chevrons: 'M8 9l4-4 4 4M16 15l-4 4-4-4',
+	upload: 'M12 16V4M7 9l5-5 5 5M4 20h16',
+	x: 'M18 6L6 18M6 6l12 12',
+	comment: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+	lock: 'M6 11h12v10H6zM8 11V7a4 4 0 018 0v4',
+	globe: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3.5 9h17M3.5 15h17M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z',
+	code: 'M8 9l-4 3 4 3M16 9l4 3-4 3',
+	list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
+	file: 'M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9zM14 3v6h6',
 };
 
 export function Icon( { name, size = 18, className = '' } ) {
@@ -33,7 +44,7 @@ export function Icon( { name, size = 18, className = '' } ) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth="1.8"
+			strokeWidth="2"
 			strokeLinecap="round"
 			strokeLinejoin="round"
 			aria-hidden="true"
@@ -43,24 +54,38 @@ export function Icon( { name, size = 18, className = '' } ) {
 	);
 }
 
-export function ScreenHeader( { title, lede } ) {
+export function ScreenHeader( { title, lede, actions } ) {
 	return (
 		<div className={ P + 'screen__head' }>
-			<h1 className={ P + 'screen__title' }>{ title }</h1>
-			{ lede && <p className={ P + 'screen__lede' }>{ lede }</p> }
+			<div className={ P + 'screen__text' }>
+				<h1 className={ P + 'screen__title' }>{ title }</h1>
+				{ lede && <p className={ P + 'screen__lede' }>{ lede }</p> }
+			</div>
+			{ actions && (
+				<div className={ P + 'screen__actions' }>{ actions }</div>
+			) }
 		</div>
 	);
 }
 
-export function Panel( { title, icon, meta, actions, flush, children } ) {
+/**
+ * A card. With a title it gets a header row; `meta` and `actions` sit at its
+ * right.
+ *
+ * @param {Object}  root0          Props.
+ * @param {string}  root0.title    Heading.
+ * @param {Object}  root0.meta     Muted text at the right of the heading.
+ * @param {Object}  root0.actions  Controls at the right of the heading.
+ * @param {boolean} root0.flush    No padding around the body.
+ * @param {Object}  root0.children Body.
+ * @return {Object} Card element.
+ */
+export function Panel( { title, meta, actions, flush, children } ) {
 	return (
 		<section className={ P + 'panel' }>
 			{ ( title || meta || actions ) && (
 				<header className={ P + 'panel__head' }>
-					<h2 className={ P + 'panel__title' }>
-						{ icon && <Icon name={ icon } /> }
-						{ title }
-					</h2>
+					<h2 className={ P + 'panel__title' }>{ title }</h2>
 					{ meta && (
 						<span className={ P + 'panel__meta' }>{ meta }</span>
 					) }
@@ -74,6 +99,31 @@ export function Panel( { title, icon, meta, actions, flush, children } ) {
 	);
 }
 
+/**
+ * A numbered part of a form card.
+ *
+ * @param {Object} root0          Props.
+ * @param {number} root0.n        Its number.
+ * @param {string} root0.title    Heading.
+ * @param {string} root0.hint     Muted text beside the heading.
+ * @param {Object} root0.children Body.
+ * @return {Object} Section element.
+ */
+export function Step( { n, title, hint, children } ) {
+	return (
+		<div className={ P + 'step' }>
+			<div className={ P + 'step__head' }>
+				<span className={ P + 'step__n' } aria-hidden="true">
+					{ n }
+				</span>
+				<h2 className={ P + 'step__title' }>{ title }</h2>
+				{ hint && <span className={ P + 'step__hint' }>{ hint }</span> }
+			</div>
+			{ children }
+		</div>
+	);
+}
+
 export function Pill( { tone = 'off', children } ) {
 	return (
 		<span className={ P + 'pill ' + P + 'pill--' + tone }>
@@ -83,7 +133,7 @@ export function Pill( { tone = 'off', children } ) {
 }
 
 export function Button( {
-	variant = 'ghost',
+	variant = 'secondary',
 	small,
 	className = '',
 	...props
@@ -103,6 +153,82 @@ export function Button( {
 			}
 			{ ...props }
 		/>
+	);
+}
+
+/**
+ * Buttons that pick one of a few values, drawn as a track.
+ *
+ * @param {Object}   root0          Props.
+ * @param {string}   root0.label    Accessible name of the group.
+ * @param {Array}    root0.options  Rows of { value, label, count }.
+ * @param {string}   root0.value    The chosen value.
+ * @param {Function} root0.onChange Called with the new value.
+ * @return {Object} Group element.
+ */
+export function Segmented( { label, options, value, onChange } ) {
+	return (
+		<div className={ P + 'seg' } role="group" aria-label={ label }>
+			{ options.map( ( o ) => (
+				<button
+					key={ o.value }
+					type="button"
+					className={
+						P + 'seg__btn' + ( o.value === value ? ' is-on' : '' )
+					}
+					aria-pressed={ o.value === value }
+					onClick={ () => onChange( o.value ) }
+				>
+					{ o.label }
+					{ o.count !== undefined && (
+						<span className={ P + 'seg__count' }>{ o.count }</span>
+					) }
+				</button>
+			) ) }
+		</div>
+	);
+}
+
+export function Switch( { checked, onChange, label } ) {
+	return (
+		<button
+			type="button"
+			role="switch"
+			aria-checked={ checked }
+			aria-label={ label }
+			className={ P + 'switch' + ( checked ? ' is-on' : '' ) }
+			onClick={ () => onChange( ! checked ) }
+		/>
+	);
+}
+
+export function SearchBox( { label, value, onChange, placeholder } ) {
+	return (
+		<div className={ P + 'search' }>
+			<Icon name="search" size={ 15 } />
+			<input
+				type="search"
+				aria-label={ label }
+				placeholder={ placeholder || label }
+				value={ value }
+				onChange={ ( e ) => onChange( e.target.value ) }
+			/>
+		</div>
+	);
+}
+
+export function Stat( { icon, tone, label, value, note } ) {
+	return (
+		<div className={ P + 'stat' }>
+			<span className={ P + 'tile ' + P + 'tile--' + tone }>
+				<Icon name={ icon } size={ 19 } />
+			</span>
+			<span className={ P + 'stat__text' }>
+				<span className={ P + 'stat__label' }>{ label }</span>
+				<span className={ P + 'stat__value' }>{ value }</span>
+				{ note && <span className={ P + 'stat__note' }>{ note }</span> }
+			</span>
+		</div>
 	);
 }
 
@@ -144,15 +270,16 @@ export function Loading() {
 /**
  * A link that opens GitHub in a new tab.
  *
- * @param {Object} root0          Props.
- * @param {string} root0.href     Address.
- * @param {Object} root0.children Link text.
+ * @param {Object} root0           Props.
+ * @param {string} root0.href      Address.
+ * @param {string} root0.className Extra class.
+ * @param {Object} root0.children  Link text.
  * @return {Object} Link element.
  */
-export function External( { href, children } ) {
+export function External( { href, className = '', children } ) {
 	return (
 		<a
-			className={ P + 'external' }
+			className={ P + 'external ' + className }
 			href={ href }
 			target="_blank"
 			rel="noopener noreferrer"
