@@ -43,7 +43,7 @@ export default function TargetPicker( { targets, value, onChange } ) {
 		( t ) =>
 			! q ||
 			t.name.toLowerCase().includes( q ) ||
-			t.repo.toLowerCase().includes( q )
+			( t.route || t.repo ).toLowerCase().includes( q )
 	);
 	// The order the list is drawn in, so the arrow keys follow it.
 	const ordered = [];
@@ -123,7 +123,7 @@ export default function TargetPicker( { targets, value, onChange } ) {
 							</span>
 							<span className={ P + 'picker__repo' }>
 								<Icon name="repo" size={ 13 } />
-								{ chosen.repo }
+								{ chosen.route || chosen.repo }
 							</span>
 						</>
 					) : (
@@ -217,7 +217,7 @@ export default function TargetPicker( { targets, value, onChange } ) {
 														P + 'picker__optrepo'
 													}
 												>
-													{ t.repo }
+													{ t.route || t.repo }
 												</span>
 											</button>
 										) ) }

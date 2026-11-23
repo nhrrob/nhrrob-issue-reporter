@@ -50,6 +50,7 @@ Each runs the same code as the form, as the person who is logged in. For a plugi
 - `nhrrob_issue_reporter_client_id`: use your own GitHub OAuth App for Connect GitHub.
 - `nhrrob_issue_reporter_can_send`: let more people use the feedback widget.
 - `nhrrob_issue_reporter_feedback_row`: change a piece of feedback as the Inbox shows it.
+- `nhrrob_issue_reporter_targets`: give a plugin or theme a `route`, so its reports go through `nhrrob_issue_reporter_pre_send` to another tracker instead of GitHub; `nhrrob_issue_reporter_issue_state` then says whether those issues are open or closed.
 
 == Installation ==
 1. Install the plugin from Plugins → Add New, or upload the zip, and activate it.
@@ -129,7 +130,8 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 
 = 0.5.1 =
 * Better: the Connect GitHub screen and the FAQ say what GitHub's approval page shows, so it can be told apart from a copy.
-* Developers: the nhrrob_issue_reporter_can_send and nhrrob_issue_reporter_feedback_row filters.
+* Developers: the nhrrob_issue_reporter_can_send, nhrrob_issue_reporter_feedback_row, nhrrob_issue_reporter_targets and nhrrob_issue_reporter_issue_state filters. A plugin or theme can be routed to another tracker; it then needs no GitHub repository or token, and is never sent to GitHub.
+* Better: the Inbox says "Send as an issue", since an issue may go somewhere other than GitHub.
 
 = 0.5.0 =
 * New: the feedback widget. A "Report an issue" item in the admin bar on the site and in the dashboard, and a floating Feedback button on the site, for the roles you choose.

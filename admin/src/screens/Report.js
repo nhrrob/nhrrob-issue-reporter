@@ -63,7 +63,7 @@ function writeDraft( draft ) {
 
 export default function Report( { boot, data, setData, navigate } ) {
 	const toast = useToast();
-	const targets = data.plugins.filter( ( p ) => p.repo );
+	const targets = data.plugins.filter( ( p ) => p.repo || p.route );
 	const draft = useRef( readDraft() ).current;
 	const preset =
 		targets.find( ( p ) => p.file === boot.plugin ) ||
@@ -87,7 +87,10 @@ export default function Report( { boot, data, setData, navigate } ) {
 	const formRef = useRef();
 
 	const target = targets.find( ( p ) => p.file === file );
-	const ready = data.hasToken && targets.length > 0;
+	// A target with a route goes to another tracker and needs no GitHub token.
+	const canSend = ( t ) => !! t && ( !! t.route || data.hasToken );
+	const ready = targets.some( canSend ) && ( ! target || canSend( target ) );
+	const routed = targets.some( ( t ) => t.route );
 
 	// Until edited as text, the environment follows the chosen target, so
 	// its own line is part of what is shown and sent.
@@ -123,7 +126,13 @@ export default function Report( { boot, data, setData, navigate } ) {
 
 	const lookUp = useCallback(
 		( forFile, forTitle ) => {
-			if ( ! data.hasToken || ! forFile || forTitle.trim().length < 4 ) {
+			const to = targets.find( ( t ) => t.file === forFile );
+			if (
+				! data.hasToken ||
+				! to ||
+				to.route ||
+				forTitle.trim().length < 4
+			) {
 				setSimilar( null );
 				return;
 			}
@@ -133,7 +142,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 				.catch( () => setSimilar( null ) )
 				.finally( () => setSearching( false ) );
 		},
-		[ data.hasToken ]
+		[ data.hasToken, targets ]
 	);
 
 	const addImages = ( files ) => {
@@ -353,7 +362,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 				) }
 			/>
 
-			{ ! data.hasToken && (
+			{ ! data.hasToken && ! routed && (
 				<div className={ P + 'banner' }>
 					<span className={ P + 'tile ' + P + 'tile--warn' }>
 						<Icon name="link" size={ 18 } />
@@ -637,7 +646,9 @@ export default function Report( { boot, data, setData, navigate } ) {
 										'Opens an issue in',
 										'nhrrob-issue-reporter'
 									) }{ ' ' }
-									<strong>{ target.repo }</strong>
+									<strong>
+										{ target.route || target.repo }
+									</strong>
 								</>
 							) : (
 								__(
@@ -690,7 +701,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 						<div className={ P + 'preview' }>
 							<span className={ P + 'preview__repo' }>
 								{ target
-									? target.repo
+									? target.route || target.repo
 									: __(
 											'No repository chosen',
 											'nhrrob-issue-reporter'

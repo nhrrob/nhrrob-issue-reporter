@@ -122,14 +122,31 @@ class ReposTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'p/p.php'     => [ 'type' => 'plugin', 'name' => 'P', 'version' => '1', 'repo' => 'me/p', 'detected' => 'me/p' ],
-				'mu:site.php' => [ 'type' => 'mu-plugin', 'name' => 'Site', 'version' => '2', 'repo' => 'me/site', 'detected' => 'me/site' ],
-				'theme:child' => [ 'type' => 'theme', 'name' => 'Child', 'version' => '3', 'repo' => 'me/child', 'detected' => '' ],
-				'theme:other' => [ 'type' => 'theme', 'name' => 'Other', 'version' => '4', 'repo' => 'me/other', 'detected' => 'me/other' ],
-				'repo:me/app' => [ 'type' => 'repo', 'name' => 'App', 'version' => '', 'repo' => 'me/app', 'detected' => 'me/app' ],
+				'p/p.php'     => [ 'type' => 'plugin', 'name' => 'P', 'version' => '1', 'repo' => 'me/p', 'detected' => 'me/p', 'route' => '' ],
+				'mu:site.php' => [ 'type' => 'mu-plugin', 'name' => 'Site', 'version' => '2', 'repo' => 'me/site', 'detected' => 'me/site', 'route' => '' ],
+				'theme:child' => [ 'type' => 'theme', 'name' => 'Child', 'version' => '3', 'repo' => 'me/child', 'detected' => '', 'route' => '' ],
+				'theme:other' => [ 'type' => 'theme', 'name' => 'Other', 'version' => '4', 'repo' => 'me/other', 'detected' => 'me/other', 'route' => '' ],
+				'repo:me/app' => [ 'type' => 'repo', 'name' => 'App', 'version' => '', 'repo' => 'me/app', 'detected' => 'me/app', 'route' => '' ],
 			],
 			Repos::all()
 		);
+	}
+
+	public function testAnotherPluginCanGiveATargetARouteAndThenNoRepositoryIsNeeded() {
+		WP_Mock::userFunction( 'get_option' )->with( Settings::OPTION, [] )->andReturn( [] );
+		WP_Mock::userFunction( 'get_plugins' )->andReturn( [ 'p/p.php' => [ 'Name' => 'P', 'Version' => '1' ] ] );
+		WP_Mock::userFunction( 'get_mu_plugins' )->andReturn( [] );
+		WP_Mock::userFunction( 'wp_get_themes' )->andReturn( [] );
+
+		$plain = [
+			'p/p.php' => [ 'type' => 'plugin', 'name' => 'P', 'version' => '1', 'repo' => '', 'detected' => '' ],
+		];
+		$routed                     = $plain;
+		$routed['p/p.php']['route'] = '<b>Jira</b> · ACME';
+		WP_Mock::onFilter( 'nhrrob_issue_reporter_targets' )->with( $plain )->reply( $routed );
+
+		$this->assertSame( 'Jira · ACME', Repos::all()['p/p.php']['route'] );
+		$this->assertSame( 'Jira · ACME', Repos::resolve( 'p/p.php' )['route'] );
 	}
 
 	private function theme( array $headers ) {
