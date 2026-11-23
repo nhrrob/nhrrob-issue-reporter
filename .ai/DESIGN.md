@@ -47,4 +47,4 @@ Plain words from the site owner's side. Say what will be sent and where. Errors 
 
 ## 6. Planned (drawn on the canvas, not built)
 
-The client feedback widget and the Inbox (UAT), shown in `docs/design/AuroraWidget.dc.html` and `AuroraInbox.dc.html`; type and severity labels; ⌘K search. Guest reviewers are a Pro proposal (nhrrob/nhrrob-issue-reporter-pro).
+The client feedback widget and the Inbox (UAT), shown in `docs/design/AuroraWidget.dc.html` and `AuroraInbox.dc.html`; type and severity labels; ⌘K search.
