@@ -1,6 +1,6 @@
 {
 	"name": "nhrrob-issue-reporter",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "React admin app for NHR Issue Reporter.",
 	"author": "Nazmul Hasan Robin",
 	"license": "GPL-2.0-or-later",

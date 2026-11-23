@@ -99,6 +99,7 @@ export default function App( { boot } ) {
 				groups={ groups }
 				active={ active }
 				onNavigate={ setActive }
+				site={ boot.siteName }
 				connection={ connection }
 				title={
 					boot.pluginName ||

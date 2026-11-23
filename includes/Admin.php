@@ -124,6 +124,8 @@ class Admin {
 				'restRoot'   => esc_url_raw( rest_url() ),
 				'nonce'      => wp_create_nonce( 'wp_rest' ),
 				'pluginName' => __( 'Report Issue', 'nhrrob-issue-reporter' ),
+				// Shown under the app's name; React escapes it.
+				'siteName'   => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 				'version'    => NHRROB_ISSUE_REPORTER_VERSION,
 				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- preselects a plugin in the form; changes nothing.
 				'plugin'     => isset( $_GET['plugin'] ) ? sanitize_text_field( wp_unslash( $_GET['plugin'] ) ) : '',
