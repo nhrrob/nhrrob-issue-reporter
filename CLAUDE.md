@@ -2,7 +2,9 @@
 
 Slug `nhrrob-issue-reporter` · display name "NHR Issue Reporter" · menu label **Report Issue** (Tools → Report Issue; never "NHR" in the UI).
 
-Private repository, version 0.x, prepared for WordPress.org on 2026-11-23 (the zip is built as described under "Releases"). `.ai/PRD.md` holds the scope, what is planned, what was left out on purpose, and the free/Pro split (the Pro plan lives in nhrrob/nhrrob-issue-reporter-pro): read it before proposing a feature. `.ai/DESIGN.md` and `docs/design/` hold the "Aurora" design: a design change updates both in the same pull request. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
+Public repository, version 0.x, prepared for WordPress.org on 2026-11-23 (the zip is built as described under "Releases"). `.ai/PRD.md` holds the scope, what is planned, what was left out on purpose, and what stays free: read it before proposing a feature. `.ai/DESIGN.md` and `docs/design/` hold the "Aurora" design: a design change updates both in the same pull request. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
+
+**This repository is public.** Pricing, competitor research, positioning and the paid add-on's plan live in the private nhrrob/nhrrob-issue-reporter-pro (`docs/`); read them there and never copy them into this repository, its issues or its pull requests.
 
 **Decision log rule:** a pull request that adds a tool, script, check, dependency or rule adds a row to `docs/DECISIONS.md` in the same pull request. One that reverses a decision strikes its row and adds a new one; it never deletes a row.
 
@@ -95,7 +97,7 @@ The codebase is PHPCS-clean, so any new violation is yours; fix it rather than w
 
 ## Trying it locally
 
-The dev copy is in `~/Sites/nhrrob-dev/wp-content/plugins/`. To try the app without touching GitHub, answer its requests with a temporary `pre_http_request` filter in a mu-plugin and delete it afterwards. A real report is best sent to this plugin's own private repository.
+The dev copy is in `~/Sites/nhrrob-dev/wp-content/plugins/`. To try the app without touching GitHub, answer its requests with a temporary `pre_http_request` filter in a mu-plugin and delete it afterwards. A real report is best sent to this plugin's own repository.
 
 ## Releases
 

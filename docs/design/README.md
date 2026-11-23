@@ -2,8 +2,7 @@
 
 The mockups the admin app is built from: "Aurora", chosen on 2026-11-23
 (issue #15). They are the source files of a Claude design canvas, kept here so
-the design is versioned next to the code. The canvas is private to the
-owner's Claude account: <https://claude.ai/artifact/5nzTAn75GuMLeEA8kLzcWx>.
+the design is versioned next to the code.
 
 | File | What it shows | Built |
 | --- | --- | --- |
