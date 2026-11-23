@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name: NHR Issue Reporter
- * Plugin URI: https://github.com/nhrrob/nhrrob-issue-reporter
  * Description: Report an issue with a plugin to its GitHub repository, without leaving the dashboard.
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/

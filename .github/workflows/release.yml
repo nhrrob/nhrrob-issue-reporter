@@ -2,7 +2,9 @@ name: Release
 
 # When the plugin's Version changes on main, tag v<version> and make a GitHub
 # release with that version's changelog from readme.txt. The blog installs
-# the plugin from these tags with Composer.
+# the plugin from these tags with Composer. Then the same version, with
+# .wordpress-org/, goes to WordPress.org; that step is skipped until the
+# SVN_USERNAME and SVN_PASSWORD secrets are set.
 on:
   push:
     branches: [ "main" ]
@@ -14,11 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Tag and release the version
+      id: release
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -34,6 +40,18 @@ jobs:
           exit 0
         fi
 
+
         # The notes are this version's lines under "== Changelog ==" in readme.txt.
         awk -v version="$version" '/^= /{ found = ( $2 == version ); next } /^== /{ found = 0 } found' readme.txt > release-notes.md
         gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --notes-file release-notes.md
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Production autoloader (no dev packages)
+      if: steps.release.outputs.version && env.SVN_USERNAME
+      run: composer install --no-dev --no-interaction --optimize-autoloader
+
+    - name: Send the version to WordPress.org
+      if: steps.release.outputs.version && env.SVN_USERNAME
+      uses: 10up/action-wordpress-plugin-deploy@stable
+      env:
+        VERSION: ${{ steps.release.outputs.version }}

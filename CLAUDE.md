@@ -2,7 +2,7 @@
 
 Slug `nhrrob-issue-reporter` · display name "NHR Issue Reporter" · menu label **Report Issue** (Tools → Report Issue; never "NHR" in the UI).
 
-Private repository, version 0.x, not on WordPress.org. `.ai/PRD.md` holds the scope, what is planned, what was left out on purpose, and the free/Pro split (the Pro plan lives in nhrrob/nhrrob-issue-reporter-pro): read it before proposing a feature. `.ai/DESIGN.md` and `docs/design/` hold the "Aurora" design: a design change updates both in the same pull request. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
+Private repository, version 0.x, prepared for WordPress.org on 2026-11-23 (the zip is built as described under "Releases"). `.ai/PRD.md` holds the scope, what is planned, what was left out on purpose, and the free/Pro split (the Pro plan lives in nhrrob/nhrrob-issue-reporter-pro): read it before proposing a feature. `.ai/DESIGN.md` and `docs/design/` hold the "Aurora" design: a design change updates both in the same pull request. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
 
 **Decision log rule:** a pull request that adds a tool, script, check, dependency or rule adds a row to `docs/DECISIONS.md` in the same pull request. One that reverses a decision strikes its row and adds a new one; it never deletes a row.
 
@@ -35,7 +35,10 @@ admin/src/         React source: index.js, app.js, api.js, components/ (AppShell
 admin/build/       compiled output (committed, ships)
 tests/             PHPUnit + WP_Mock
 .github/workflows/php.yml   PHPCS, then per PHP version: syntax, unit tests, smoke test
-.github/workflows/release.yml  when Version changes on main: tag v<version> and a GitHub release with readme.txt's changelog
+.github/workflows/release.yml  when Version changes on main: tag v<version> and a GitHub release with readme.txt's changelog, then send that version with .wordpress-org/ to WordPress.org (10up deploy action; skipped until the SVN_USERNAME and SVN_PASSWORD secrets are set)
+.github/workflows/plugin-check.yml  WordPress.org's Plugin Check on the zip's files, on every pull request
+docs/wporg/        icon.html and banner.html, the sources of the WordPress.org icon and banners; render.mjs (Playwright) writes them to .wordpress-org/
+.wordpress-org/    WordPress.org listing: icon, banners, screenshot-1 to 6 (captioned in readme.txt's == Screenshots ==); not shipped
 .github/ci/smoke.php        calls every GET route inside a real WordPress, fails on any PHP notice
 ```
 
@@ -96,3 +99,7 @@ The dev copy is in `~/Sites/nhrrob-dev/wp-content/plugins/`. To try the app with
 ## Releases
 
 Raise `Version` in the header (and the class constant) and `Stable tag`, and add a `= x.y.z =` section under `== Changelog ==` in `readme.txt`. Merging that into `main` runs `release.yml`, which tags `v<version>` and makes the GitHub release. The blog (`nhrrob/nazmulrobin_blog`) requires the plugin by these tags with Composer, so a release reaches it in Dependabot's next pull request.
+
+The zip holds what `.distignore` leaves in, with the production autoloader: `composer install --no-dev`, then `rsync -a --exclude-from=.distignore ./ <dir>/nhrrob-issue-reporter/` and zip that folder. It ships `admin/src` and `package.json` so the source of `admin/build` is in it. Check it with `wp plugin check <dir>/nhrrob-issue-reporter --slug=nhrrob-issue-reporter`. Nothing about Pro goes into a shipped file.
+
+The screenshots are taken on the dev site with sample data from a temporary mu-plugin (see "Trying it locally"), at 1440px wide, light, with the dark theme as the last one.

@@ -74,9 +74,9 @@ These change three rules in `CLAUDE.md` (nothing on the front end; only admins; 
 
 The market check and the Pro plan are in [nhrrob/nhrrob-issue-reporter-pro](https://github.com/nhrrob/nhrrob-issue-reporter-pro) (`docs/market.md`, `docs/PRD.md`), from #17 and #18. In short: the widget, annotation, console capture, Inbox, labels and templates, and "Sign in with GitHub" are free in other plugins or needed for WordPress.org, so they are free here. Pro candidates, for the owner to confirm: guest reviewers without an account, more trackers (Jira, Linear, GitLab, Trello) with status sync, and PHP errors turned into reports.
 
-## Before this can be public
+## Before this can be public (done 2026-11-23)
 
-- "Sign in with GitHub", or very clear token instructions with screenshots.
-- A decision on reporting to repositories the site owner does not control: today any plugin with a GitHub address in its header gets the link.
-- WordPress.org assets, Plugin Check on a production copy, the deploy workflows my other plugins have.
-- Translations template.
+- "Sign in with GitHub", or very clear token instructions with screenshots. Done as instructions: the checklist on Settings → GitHub and the readme's setup steps.
+- A decision on reporting to repositories the site owner does not control: today any plugin with a GitHub address in its header gets the link. Decided: allowed, see `docs/DECISIONS.md`.
+- WordPress.org assets, Plugin Check on a production copy, the deploy workflows my other plugins have. Done: `.wordpress-org/`, `plugin-check.yml`, the deploy step in `release.yml`.
+- Translations template. Not needed: WordPress.org builds the language packs from the code, the script's strings included.

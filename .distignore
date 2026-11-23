@@ -42,6 +42,7 @@ node_modules
 .editorconfig
 .eslintignore
 .eslintrc
+.eslintrc.js
 .git
 .github
 .gitattributes
@@ -55,7 +56,6 @@ bin
 .circleci/config.yml
 dependencies.yml
 Gruntfile.js
-package.json
 phpunit.xml
 phpunit.xml.dist
 multisite.xml
