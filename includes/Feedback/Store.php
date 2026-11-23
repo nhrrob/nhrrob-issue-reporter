@@ -103,16 +103,30 @@ class Store {
 	public static function create( array $fields, $shot ) {
 		$text = Rest::text( isset( $fields['text'] ) ? $fields['text'] : '', 5000 );
 
+		// wp_insert_post() unslashes its input and, for people without unfiltered_html,
+		// runs kses on it. This is plain text, only ever shown escaped, so neither may change it.
+		$kses = false !== has_filter( 'content_save_pre', 'wp_filter_post_kses' );
+
+		if ( $kses ) {
+			kses_remove_filters();
+		}
+
 		$id = wp_insert_post(
-			[
-				'post_type'    => self::TYPE,
-				'post_status'  => 'private',
-				'post_title'   => Rest::line( strtok( $text, "\n" ) ),
-				'post_content' => $text,
-				'post_author'  => get_current_user_id(),
-			],
+			wp_slash(
+				[
+					'post_type'    => self::TYPE,
+					'post_status'  => 'private',
+					'post_title'   => Rest::line( strtok( $text, "\n" ) ),
+					'post_content' => $text,
+					'post_author'  => get_current_user_id(),
+				]
+			),
 			true
 		);
+
+		if ( $kses ) {
+			kses_init_filters();
+		}
 
 		if ( is_wp_error( $id ) ) {
 			return $id;
@@ -121,17 +135,19 @@ class Store {
 		update_post_meta(
 			$id,
 			self::META,
-			[
-				'status'   => 'new',
-				'kind'     => in_array( $fields['kind'] ?? '', self::KINDS, true ) ? $fields['kind'] : 'bug',
-				'severity' => '',
-				'page'     => Rest::line( $fields['page'] ?? '' ),
-				'browser'  => Rest::line( $fields['browser'] ?? '' ),
-				'screen'   => Rest::line( $fields['screen'] ?? '' ),
-				'errors'   => array_slice( array_values( array_filter( array_map( [ self::class, 'error_line' ], (array) ( $fields['errors'] ?? [] ) ) ) ), 0, 20 ),
-				'shot'     => (int) $shot,
-				'issue'    => null,
-			]
+			wp_slash(
+				[
+					'status'   => 'new',
+					'kind'     => in_array( $fields['kind'] ?? '', self::KINDS, true ) ? $fields['kind'] : 'bug',
+					'severity' => '',
+					'page'     => Rest::line( $fields['page'] ?? '' ),
+					'browser'  => Rest::line( $fields['browser'] ?? '' ),
+					'screen'   => Rest::line( $fields['screen'] ?? '' ),
+					'errors'   => array_slice( array_values( array_filter( array_map( [ self::class, 'error_line' ], (array) ( $fields['errors'] ?? [] ) ) ) ), 0, 20 ),
+					'shot'     => (int) $shot,
+					'issue'    => null,
+				]
+			)
 		);
 
 		if ( $shot ) {
@@ -277,7 +293,7 @@ class Store {
 			}
 		}
 
-		update_post_meta( $post->ID, self::META, $meta );
+		update_post_meta( $post->ID, self::META, wp_slash( $meta ) );
 
 		return self::row( get_post( $post->ID ) );
 	}
@@ -327,7 +343,7 @@ class Store {
 			'number' => (int) $report['number'],
 			'url'    => (string) $report['url'],
 		];
-		update_post_meta( $post->ID, self::META, $meta );
+		update_post_meta( $post->ID, self::META, wp_slash( $meta ) );
 	}
 
 	/**
