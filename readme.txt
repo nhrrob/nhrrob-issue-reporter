@@ -4,7 +4,7 @@ Tags: github, issues, bug report, support, developer
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ In `wp-config.php` if you define `NHRROB_ISSUE_REPORTER_TOKEN` there, which is t
 Its three options: the settings, the stored token and the list of sent reports. Issues on GitHub, and screenshots in the Media Library, are not touched.
 
 == Changelog ==
+
+= 0.4.0 =
+* New design, light and dark: a sidebar with the sections and the GitHub connection, numbered steps in the form, cards and filters.
+* Report: a searchable picker for the plugin, theme or repository; Markdown buttons; drop, paste or browse screenshots; each environment line has its own switch, or edit it all as text; a live preview of the issue; Ctrl or Cmd + Enter sends.
+* The typed report is kept as a draft in the browser until it is sent or cleared.
+* Sent: totals, filters by state and plugin, search by title or issue number, sorting. The filters are kept in the page address.
+* Settings: a GitHub tab with the setup steps, and a Repositories tab with search and filters (has a repository, not set, set here).
 
 = 0.3.0 =
 * Report to themes, must-use plugins and other repositories saved in Settings; a new repository is checked when it is saved.

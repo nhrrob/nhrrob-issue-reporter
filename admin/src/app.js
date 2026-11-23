@@ -2,7 +2,7 @@
  * Root component: app shell, section routing and the shared state.
  */
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 
 import api from './api';
 import AppShell from './components/AppShell';
@@ -25,17 +25,58 @@ export default function App( { boot } ) {
 			.catch( ( e ) => setFailed( e.message || String( e ) ) );
 	}, [] );
 
-	const modules = [
-		{ id: 'report', label: __( 'Report', 'nhrrob-issue-reporter' ) },
+	const reachable = data ? data.plugins.filter( ( p ) => p.repo ).length : 0;
+	const groups = [
 		{
-			id: 'sent',
-			label: __( 'Sent', 'nhrrob-issue-reporter' ),
-			count: data
-				? data.reports.filter( ( r ) => r.state === 'open' ).length
-				: 0,
+			label: __( 'Reports', 'nhrrob-issue-reporter' ),
+			items: [
+				{
+					id: 'report',
+					icon: 'plus',
+					label: __( 'New report', 'nhrrob-issue-reporter' ),
+				},
+				{
+					id: 'sent',
+					icon: 'send',
+					label: __( 'Sent', 'nhrrob-issue-reporter' ),
+					count: data
+						? data.reports.filter( ( r ) => r.state !== 'closed' )
+								.length
+						: 0,
+				},
+			],
 		},
-		{ id: 'settings', label: __( 'Settings', 'nhrrob-issue-reporter' ) },
+		{
+			label: __( 'Setup', 'nhrrob-issue-reporter' ),
+			items: [
+				{
+					id: 'settings',
+					icon: 'settings',
+					label: __( 'Settings', 'nhrrob-issue-reporter' ),
+				},
+			],
+		},
 	];
+
+	let connection = null;
+	if ( data ) {
+		connection = {
+			ok: data.hasToken,
+			line: data.hasToken
+				? sprintf(
+						/* translators: %d: number of plugins, themes and repositories with a repository set. */
+						_n(
+							'%d place to report to',
+							'%d places to report to',
+							reachable,
+							'nhrrob-issue-reporter'
+						),
+						reachable
+				  )
+				: __( 'Add a token to send reports.', 'nhrrob-issue-reporter' ),
+		};
+	}
+
 	const Screen = SCREENS[ active ];
 
 	let content = <Loading />;
@@ -55,9 +96,10 @@ export default function App( { boot } ) {
 	return (
 		<ToastProvider>
 			<AppShell
-				modules={ modules }
+				groups={ groups }
 				active={ active }
 				onNavigate={ setActive }
+				connection={ connection }
 				title={
 					boot.pluginName ||
 					__( 'Report Issue', 'nhrrob-issue-reporter' )

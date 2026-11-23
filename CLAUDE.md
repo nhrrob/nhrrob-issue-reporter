@@ -2,7 +2,7 @@
 
 Slug `nhrrob-issue-reporter` · display name "NHR Issue Reporter" · menu label **Report Issue** (Tools → Report Issue; never "NHR" in the UI).
 
-Private repository, version 0.x, not on WordPress.org. `.ai/PRD.md` holds the scope, what was left out on purpose and the candidates for a paid version: read it before proposing a feature. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
+Private repository, version 0.x, not on WordPress.org. `.ai/PRD.md` holds the scope, what is planned, what was left out on purpose, and the free/Pro split (the Pro plan lives in nhrrob/nhrrob-issue-reporter-pro): read it before proposing a feature. `.ai/DESIGN.md` and `docs/design/` hold the "Aurora" design: a design change updates both in the same pull request. `docs/DECISIONS.md` says why the tools, checks, dependencies and rules are the way they are, and what undoing each would take: read it before changing one. `docs/notes/` has a dated note per working session.
 
 **Decision log rule:** a pull request that adds a tool, script, check, dependency or rule adds a row to `docs/DECISIONS.md` in the same pull request. One that reverses a decision strikes its row and adds a new one; it never deletes a row.
 
@@ -13,7 +13,7 @@ Private repository, version 0.x, not on WordPress.org. `.ai/PRD.md` holds the sc
 3. **A repository is always `owner/name` on github.com**, produced by `Repos::normalize()`. Nothing else may be put into an API path.
 4. **Nothing is sent to GitHub without the user acting.** No request on the front end or in cron. The user acts in the plugin's own screen, or through an ability run as them (an agent using their application password). The similar-issue search runs when the title field is left; saving a new repository in Settings checks it with GitHub; opening the app (`GET /state`) makes no outside request. The Sent tab asks for the state of open issues only, at most 10 per view and each at most every 15 minutes.
 5. **Every REST route and ability is behind `Settings::can_manage()`** (default `activate_plugins`, filter `nhrrob_issue_reporter_capability`); the routes also with the REST nonce.
-6. **The screen is a React app in the style of my other plugins** (`.ai/DESIGN.md`): `@wordpress/scripts` only, no component or icon library, no database tables. Light and dark theme.
+6. **The screen is a React app in the "Aurora" design** (`.ai/DESIGN.md`, `docs/design/`): a premium look, not the older plugins' shared shell. `@wordpress/scripts` only, no component or icon library, no web font, no database tables. Light and dark theme, both checked in a browser.
 7. **Identifiers**: namespace `NHRRob\IssueReporter\`, class `NHRRob_Issue_Reporter`, constants `NHRROB_ISSUE_REPORTER_*`, option and hook prefix `nhrrob_issue_reporter_`, CSS and HTML id prefix `nhrrob-issue-reporter-`, CSS tokens `--ir-*`, REST namespace `nhrrob-issue-reporter/v1`, JS global `nhrrobIssueReporterApp`, text domain `nhrrob-issue-reporter`.
 
 ## Layout
@@ -31,7 +31,7 @@ includes/
   GitHub.php       similar(), words(), create(), comment(), check(), state(), body(), request()
   Reports.php      the list of sent reports, their state and comment counts
   Screenshots.php  upload to the media library, Markdown links, whether GitHub can reach the site
-admin/src/         React source: index.js, app.js, api.js, components/ (AppShell, ui, toasts), screens/ (Report, Sent, Settings), style.scss
+admin/src/         React source: index.js, app.js, api.js, components/ (AppShell, ui, TargetPicker, Shots, EnvCards, toasts), screens/ (Report, Sent, Settings), style.scss
 admin/build/       compiled output (committed, ships)
 tests/             PHPUnit + WP_Mock
 .github/workflows/php.yml   PHPCS, then per PHP version: syntax, unit tests, smoke test

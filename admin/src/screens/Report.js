@@ -1,54 +1,81 @@
 /**
- * Report: the form that opens an issue, with similar open issues beside it.
+ * New report: the form that opens an issue, with a live preview and the
+ * similar open issues beside it.
  */
-import { useState, useEffect, useCallback } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
-
+import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
 import api from '../api';
 import { useToast } from '../components/ToastProvider';
+import TargetPicker from '../components/TargetPicker';
+import Shots, { TYPES, MAX_FILES } from '../components/Shots';
+import EnvCards, { rows } from '../components/EnvCards';
 import {
 	Button,
 	External,
-	Field,
 	Icon,
 	Note,
 	Panel,
 	ScreenHeader,
+	Step,
 } from '../components/ui';
 
 const P = 'nhrrob-issue-reporter-';
-const TYPES = [ 'image/png', 'image/jpeg', 'image/webp', 'image/gif' ];
-const MAX_FILES = 5;
 const MAX_BYTES = 5 * 1024 * 1024;
+const DRAFT_KEY = 'nhrrob-issue-reporter-draft';
 
-// The line about what is reported, at the top of the Environment box. Sent
-// as is, so it is not translated, like the rest of the environment text.
+// The line about what is reported, at the top of the Environment. Sent as
+// is, so it is not translated, like the rest of the environment text.
 const LINE = {
 	plugin: 'Plugin',
 	'mu-plugin': 'Must-use plugin',
 	theme: 'Theme',
 };
 
-export const GROUPS = [
-	[ 'plugin', __( 'Plugins', 'nhrrob-issue-reporter' ) ],
-	[ 'mu-plugin', __( 'Must-use plugins', 'nhrrob-issue-reporter' ) ],
-	[ 'theme', __( 'Themes', 'nhrrob-issue-reporter' ) ],
-	[ 'repo', __( 'Other repositories', 'nhrrob-issue-reporter' ) ],
+const TOOLS = [
+	[ 'bold', __( 'Bold', 'nhrrob-issue-reporter' ), '**', '**' ],
+	[ 'italic', __( 'Italic', 'nhrrob-issue-reporter' ), '_', '_' ],
+	[ 'code', __( 'Code', 'nhrrob-issue-reporter' ), '`', '`' ],
+	[ 'list', __( 'List', 'nhrrob-issue-reporter' ), '\n- ', '' ],
+	[ 'link', __( 'Link', 'nhrrob-issue-reporter' ), '[', '](https://)' ],
 ];
+
+function readDraft() {
+	try {
+		return JSON.parse( window.localStorage.getItem( DRAFT_KEY ) ) || {};
+	} catch ( e ) {
+		return {};
+	}
+}
+
+function writeDraft( draft ) {
+	try {
+		if ( draft ) {
+			window.localStorage.setItem( DRAFT_KEY, JSON.stringify( draft ) );
+		} else {
+			window.localStorage.removeItem( DRAFT_KEY );
+		}
+	} catch ( e ) {
+		/* storage unavailable: no draft is kept */
+	}
+}
 
 export default function Report( { boot, data, setData, navigate } ) {
 	const toast = useToast();
-	const plugins = data.plugins.filter( ( p ) => p.repo );
-	const preset = plugins.find( ( p ) => p.file === boot.plugin );
+	const targets = data.plugins.filter( ( p ) => p.repo );
+	const draft = useRef( readDraft() ).current;
+	const preset =
+		targets.find( ( p ) => p.file === boot.plugin ) ||
+		targets.find( ( p ) => p.file === draft.file );
 
 	const [ file, setFile ] = useState( preset ? preset.file : '' );
-	const [ title, setTitle ] = useState( '' );
-	const [ what, setWhat ] = useState( '' );
-	const [ steps, setSteps ] = useState( '' );
+	const [ title, setTitle ] = useState( draft.title || '' );
+	const [ what, setWhat ] = useState( draft.what || '' );
+	const [ steps, setSteps ] = useState( draft.steps || '' );
 	const [ environment, setEnvironment ] = useState( data.environment );
-	const [ edited, setEdited ] = useState( false );
+	const [ asText, setAsText ] = useState( false );
+	const [ off, setOff ] = useState( [] );
 	const [ similar, setSimilar ] = useState( null );
 	const [ searching, setSearching ] = useState( false );
 	const [ sending, setSending ] = useState( false );
@@ -56,26 +83,43 @@ export default function Report( { boot, data, setData, navigate } ) {
 	// Screenshots: { file, preview, id } where id is set once uploaded.
 	const [ images, setImages ] = useState( [] );
 	const [ allowAddress, setAllowAddress ] = useState( false );
+	const whatRef = useRef();
+	const formRef = useRef();
 
-	const plugin = plugins.find( ( p ) => p.file === file );
-	const ready = data.hasToken && plugins.length > 0;
+	const target = targets.find( ( p ) => p.file === file );
+	const ready = data.hasToken && targets.length > 0;
 
-	// The box shows exactly what is sent, so the plugin's line is part of it.
+	// Until edited as text, the environment follows the chosen target, so
+	// its own line is part of what is shown and sent.
 	useEffect( () => {
-		if ( ! edited ) {
+		if ( ! asText ) {
 			setEnvironment(
-				( plugin && LINE[ plugin.type ]
+				( target && LINE[ target.type ]
 					? '- ' +
-					  LINE[ plugin.type ] +
+					  LINE[ target.type ] +
 					  ': ' +
-					  plugin.name +
+					  target.name +
 					  ' ' +
-					  plugin.version +
+					  target.version +
 					  '\n'
 					: '' ) + data.environment
 			);
 		}
-	}, [ plugin, edited, data.environment ] );
+	}, [ target, asText, data.environment ] );
+
+	// What is sent: the text as typed, or the lines that are switched on.
+	const sentEnvironment = asText
+		? environment
+		: rows( environment )
+				.filter( ( r ) => ! off.includes( r.key ) )
+				.map( ( r ) => r.line )
+				.join( '\n' );
+
+	// The typed text is kept as a draft in this browser.
+	const hasDraft = !! ( title || what || steps );
+	useEffect( () => {
+		writeDraft( hasDraft ? { file, title, what, steps } : null );
+	}, [ file, title, what, steps, hasDraft ] );
 
 	const lookUp = useCallback(
 		( forFile, forTitle ) => {
@@ -161,19 +205,35 @@ export default function Report( { boot, data, setData, navigate } ) {
 
 	const blocked = images.length > 0 && ! allowAddress;
 
+	const clear = () => {
+		images.forEach( ( i ) => window.URL.revokeObjectURL( i.preview ) );
+		setTitle( '' );
+		setWhat( '' );
+		setSteps( '' );
+		setImages( [] );
+		setAllowAddress( false );
+		setSimilar( null );
+	};
+
 	const send = ( event ) => {
-		event.preventDefault();
+		if ( event ) {
+			event.preventDefault();
+		}
+		if ( ! ready || sending || blocked || ! file || ! title || ! what ) {
+			return;
+		}
 		setSending( true );
 		withImages( {
 			plugin: file,
 			title,
 			what,
 			steps,
-			environment,
+			environment: sentEnvironment,
 		} )
 			.then( ( fields ) => api( '/reports', 'POST', fields ) )
 			.then( ( answer ) => {
 				setData( { ...data, reports: answer.reports } );
+				writeDraft( null );
 				toast(
 					sprintf(
 						/* translators: 1: issue number, 2: repository such as owner/name. */
@@ -221,7 +281,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 			number,
 			what,
 			steps,
-			environment,
+			environment: sentEnvironment,
 		} )
 			.then( ( fields ) => api( '/comments', 'POST', fields ) )
 			.then( ( answer ) => {
@@ -241,334 +301,497 @@ export default function Report( { boot, data, setData, navigate } ) {
 			.finally( () => setCommenting( 0 ) );
 	};
 
+	// Wraps the selection in the description with Markdown.
+	const format = ( before, after ) => {
+		const el = whatRef.current;
+		if ( ! el ) {
+			return;
+		}
+		const start = el.selectionStart;
+		const end = el.selectionEnd;
+		const next =
+			what.slice( 0, start ) +
+			before +
+			what.slice( start, end ) +
+			after +
+			what.slice( end );
+		setWhat( next );
+		window.requestAnimationFrame( () => {
+			el.focus();
+			el.setSelectionRange( start + before.length, end + before.length );
+		} );
+	};
+
+	// ⌘↵ or Ctrl+↵ anywhere in the form sends it. The latest send() is read
+	// through a ref so the listener is added once.
+	const sendRef = useRef( send );
+	sendRef.current = send;
+	useEffect( () => {
+		const onKey = ( e ) => {
+			if (
+				e.key === 'Enter' &&
+				( e.metaKey || e.ctrlKey ) &&
+				formRef.current &&
+				formRef.current.contains( e.target )
+			) {
+				sendRef.current( e );
+			}
+		};
+		window.addEventListener( 'keydown', onKey );
+		return () => window.removeEventListener( 'keydown', onKey );
+	}, [] );
+
+	const isMac = /Mac|iPhone|iPad/.test( window.navigator.platform || '' );
+
 	return (
 		<>
 			<ScreenHeader
-				title={ __( 'Report an issue', 'nhrrob-issue-reporter' ) }
+				title={ __( 'New report', 'nhrrob-issue-reporter' ) }
 				lede={ __(
-					'Opens an issue in the plugin’s GitHub repository, with the versions a developer asks for already filled in.',
+					'Describe what went wrong. The versions a developer asks for are added for you, and you see all of it before it is sent.',
 					'nhrrob-issue-reporter'
 				) }
 			/>
 
 			{ ! data.hasToken && (
-				<Note tone="warn">
-					{ __(
-						'A GitHub token is needed before a report can be sent.',
-						'nhrrob-issue-reporter'
-					) }{ ' ' }
+				<div className={ P + 'banner' }>
+					<span className={ P + 'tile ' + P + 'tile--warn' }>
+						<Icon name="link" size={ 18 } />
+					</span>
+					<span className={ P + 'banner__text' }>
+						<strong>
+							{ __(
+								'Connect GitHub to send reports',
+								'nhrrob-issue-reporter'
+							) }
+						</strong>
+						<span>
+							{ __(
+								'One token with “Issues: Read and write”. It takes about a minute.',
+								'nhrrob-issue-reporter'
+							) }
+						</span>
+					</span>
 					<Button
-						variant="soft"
-						small
+						variant="primary"
 						onClick={ () => navigate( 'settings' ) }
 					>
-						{ __( 'Add a token', 'nhrrob-issue-reporter' ) }
+						{ __( 'Connect GitHub', 'nhrrob-issue-reporter' ) }
 					</Button>
-				</Note>
+				</div>
 			) }
-			{ data.hasToken && ! plugins.length && (
+			{ data.hasToken && ! targets.length && (
 				<Note tone="warn">
 					{ __(
 						'No plugin has a repository yet.',
 						'nhrrob-issue-reporter'
 					) }{ ' ' }
-					<Button
-						variant="soft"
-						small
-						onClick={ () => navigate( 'settings' ) }
-					>
+					<Button small onClick={ () => navigate( 'settings' ) }>
 						{ __( 'Set repositories', 'nhrrob-issue-reporter' ) }
 					</Button>
 				</Note>
 			) }
 
 			<div className={ P + 'split' }>
-				<Panel
-					title={ __( 'The report', 'nhrrob-issue-reporter' ) }
-					icon="report"
+				<form
+					ref={ formRef }
+					className={ P + 'panel ' + P + 'form' }
+					onSubmit={ send }
+					onPaste={ ( e ) => {
+						if ( e.clipboardData && e.clipboardData.files.length ) {
+							addImages( e.clipboardData.files );
+						}
+					} }
 				>
-					<form
-						className={ P + 'form' }
-						onSubmit={ send }
-						onPaste={ ( e ) => {
-							if (
-								e.clipboardData &&
-								e.clipboardData.files.length
-							) {
-								addImages( e.clipboardData.files );
-							}
-						} }
+					<Step
+						n={ 1 }
+						title={ __( 'Where it goes', 'nhrrob-issue-reporter' ) }
 					>
-						<Field
-							id={ P + 'plugin' }
-							label={ __(
-								'Plugin or theme',
+						<label
+							className="screen-reader-text"
+							htmlFor={ P + 'target' }
+						>
+							{ __(
+								'Plugin, theme or repository',
 								'nhrrob-issue-reporter'
 							) }
-						>
-							<select
-								id={ P + 'plugin' }
-								className={ P + 'input' }
-								value={ file }
-								required
-								onChange={ ( e ) => {
-									setFile( e.target.value );
-									lookUp( e.target.value, title );
-								} }
-							>
-								<option value="">
-									{ __(
-										'Choose one',
-										'nhrrob-issue-reporter'
-									) }
-								</option>
-								{ GROUPS.map( ( [ type, label ] ) => {
-									const rows = plugins.filter(
-										( p ) => p.type === type
-									);
-									return (
-										rows.length > 0 && (
-											<optgroup
-												key={ type }
-												label={ label }
-											>
-												{ rows.map( ( p ) => (
-													<option
-														key={ p.file }
-														value={ p.file }
-													>
-														{ p.name }
-													</option>
-												) ) }
-											</optgroup>
-										)
-									);
-								} ) }
-							</select>
-						</Field>
+						</label>
+						<TargetPicker
+							targets={ targets }
+							value={ file }
+							onChange={ ( next ) => {
+								setFile( next );
+								lookUp( next, title );
+							} }
+						/>
+					</Step>
 
-						<Field
+					<Step
+						n={ 2 }
+						title={ __( 'What happened', 'nhrrob-issue-reporter' ) }
+					>
+						<label
+							className="screen-reader-text"
+							htmlFor={ P + 'title' }
+						>
+							{ __( 'Title', 'nhrrob-issue-reporter' ) }
+						</label>
+						<input
 							id={ P + 'title' }
-							label={ __( 'Title', 'nhrrob-issue-reporter' ) }
-						>
-							<input
-								id={ P + 'title' }
-								className={ P + 'input' }
-								type="text"
-								maxLength={ 200 }
-								required
-								value={ title }
-								onChange={ ( e ) => setTitle( e.target.value ) }
-								onBlur={ () => lookUp( file, title ) }
-							/>
-						</Field>
-
-						<Field
-							id={ P + 'what' }
-							label={ __(
-								'What happened',
+							className={ P + 'input ' + P + 'input--title' }
+							type="text"
+							maxLength={ 200 }
+							required
+							placeholder={ __(
+								'A short title, e.g. “Referrers list shows the same host twice”',
 								'nhrrob-issue-reporter'
 							) }
-							help={ __(
-								'What you saw, and what you expected. Markdown works.',
-								'nhrrob-issue-reporter'
-							) }
-						>
+							value={ title }
+							onChange={ ( e ) => setTitle( e.target.value ) }
+							onBlur={ () => lookUp( file, title ) }
+						/>
+						<div className={ P + 'editor' }>
+							<div
+								className={ P + 'editor__bar' }
+								role="toolbar"
+								aria-label={ __(
+									'Formatting',
+									'nhrrob-issue-reporter'
+								) }
+							>
+								{ TOOLS.map( ( [ id, label, a, b ] ) => (
+									<button
+										key={ id }
+										type="button"
+										className={ P + 'editor__tool' }
+										onClick={ () => format( a, b ) }
+									>
+										{ label }
+									</button>
+								) ) }
+								<span className={ P + 'editor__md' }>
+									Markdown
+								</span>
+							</div>
+							<label
+								className="screen-reader-text"
+								htmlFor={ P + 'what' }
+							>
+								{ __(
+									'What happened',
+									'nhrrob-issue-reporter'
+								) }
+							</label>
 							<textarea
 								id={ P + 'what' }
-								className={ P + 'input' }
-								rows={ 6 }
+								ref={ whatRef }
+								className={ P + 'editor__area' }
+								rows={ 5 }
 								required
+								placeholder={ __(
+									'What you saw, and what you expected.',
+									'nhrrob-issue-reporter'
+								) }
 								value={ what }
 								onChange={ ( e ) => setWhat( e.target.value ) }
 							/>
-						</Field>
-
-						<Field
-							id={ P + 'steps' }
-							label={ __(
+						</div>
+						<label
+							className={ P + 'field__label' }
+							htmlFor={ P + 'steps' }
+						>
+							{ __(
 								'Steps to reproduce',
 								'nhrrob-issue-reporter'
 							) }
-						>
-							<textarea
-								id={ P + 'steps' }
-								className={ P + 'input' }
-								rows={ 4 }
-								value={ steps }
-								onChange={ ( e ) => setSteps( e.target.value ) }
-							/>
-						</Field>
+						</label>
+						<textarea
+							id={ P + 'steps' }
+							className={ P + 'input' }
+							rows={ 4 }
+							placeholder={ '1. …\n2. …' }
+							value={ steps }
+							onChange={ ( e ) => setSteps( e.target.value ) }
+						/>
+					</Step>
 
-						<Field
-							id={ P + 'screenshots' }
-							label={ __(
-								'Screenshots',
-								'nhrrob-issue-reporter'
-							) }
-							help={ __(
-								'PNG, JPEG, WebP or GIF, at most 5 MB each and 5 in all. You can also paste an image anywhere in the form.',
-								'nhrrob-issue-reporter'
-							) }
-						>
-							<input
-								id={ P + 'screenshots' }
-								className={ P + 'file' }
-								type="file"
-								accept={ TYPES.join( ',' ) }
-								multiple
-								disabled={ images.length >= MAX_FILES }
-								onChange={ ( e ) => {
-									addImages( e.target.files );
-									e.target.value = '';
-								} }
-							/>
-						</Field>
-						{ images.length > 0 && (
-							<>
-								<ul className={ P + 'shots' }>
-									{ images.map( ( image ) => (
-										<li key={ image.preview }>
-											<img
-												src={ image.preview }
-												alt={ image.file.name }
-											/>
-											<Button
-												small
-												variant="danger"
-												disabled={ sending }
-												onClick={ () =>
-													removeImage( image )
-												}
-											>
-												{ __(
-													'Remove',
-													'nhrrob-issue-reporter'
-												) }
-											</Button>
-										</li>
-									) ) }
-								</ul>
-								{ ! data.publicSite && (
-									<Note tone="warn">
-										{ __(
-											'This site does not look reachable from the internet, so GitHub may not be able to show these images. A password-protected site has the same problem.',
-											'nhrrob-issue-reporter'
-										) }
-									</Note>
+					<Step
+						n={ 3 }
+						title={ __( 'Screenshots', 'nhrrob-issue-reporter' ) }
+						hint={ __( 'Optional', 'nhrrob-issue-reporter' ) }
+					>
+						<Shots
+							images={ images }
+							onAdd={ addImages }
+							onRemove={ removeImage }
+							disabled={ sending }
+						/>
+						{ images.length > 0 && ! data.publicSite && (
+							<Note tone="warn">
+								{ __(
+									'This site does not look reachable from the internet, so GitHub may not be able to show these images. A password-protected site has the same problem.',
+									'nhrrob-issue-reporter'
 								) }
-								<label
-									className={ P + 'check' }
-									htmlFor={ P + 'allow-address' }
-								>
-									<input
-										id={ P + 'allow-address' }
-										type="checkbox"
-										checked={ allowAddress }
-										onChange={ ( e ) =>
-											setAllowAddress( e.target.checked )
-										}
-									/>
+							</Note>
+						) }
+						{ images.length > 0 && (
+							<label
+								className={ P + 'check' }
+								htmlFor={ P + 'allow-address' }
+							>
+								<input
+									id={ P + 'allow-address' }
+									type="checkbox"
+									checked={ allowAddress }
+									onChange={ ( e ) =>
+										setAllowAddress( e.target.checked )
+									}
+								/>
+								<span>
 									{ __(
 										'The screenshots are added to this site’s Media Library and linked from the issue, so the issue shows this site’s address. Send them anyway.',
 										'nhrrob-issue-reporter'
 									) }
-								</label>
-							</>
+								</span>
+							</label>
 						) }
+					</Step>
 
-						<Field
-							id={ P + 'environment' }
-							label={ __(
-								'Environment',
-								'nhrrob-issue-reporter'
-							) }
-							help={ __(
-								'Sent exactly as shown. Edit or empty it to send less. The site address is never added.',
-								'nhrrob-issue-reporter'
-							) }
-						>
-							<textarea
-								id={ P + 'environment' }
-								className={ P + 'input is-mono' }
-								rows={ 6 }
-								value={ environment }
-								onChange={ ( e ) => {
-									setEdited( true );
-									setEnvironment( e.target.value );
-								} }
+					<Step
+						n={ 4 }
+						title={ __( 'Environment', 'nhrrob-issue-reporter' ) }
+						hint={
+							asText
+								? ''
+								: __(
+										'Switch off anything you don’t want to send',
+										'nhrrob-issue-reporter'
+								  )
+						}
+					>
+						{ asText ? (
+							<>
+								<label
+									className="screen-reader-text"
+									htmlFor={ P + 'environment' }
+								>
+									{ __(
+										'Environment',
+										'nhrrob-issue-reporter'
+									) }
+								</label>
+								<textarea
+									id={ P + 'environment' }
+									className={ P + 'input is-mono' }
+									rows={ 6 }
+									value={ environment }
+									onChange={ ( e ) =>
+										setEnvironment( e.target.value )
+									}
+								/>
+							</>
+						) : (
+							<EnvCards
+								text={ environment }
+								off={ off }
+								onToggle={ ( key ) =>
+									setOff(
+										off.includes( key )
+											? off.filter( ( k ) => k !== key )
+											: [ ...off, key ]
+									)
+								}
 							/>
-						</Field>
-
-						<div className={ P + 'form__foot' }>
-							<Button
-								variant="primary"
-								type="submit"
-								disabled={ ! ready || sending || blocked }
-							>
-								{ sending
-									? __( 'Sending…', 'nhrrob-issue-reporter' )
-									: __(
-											'Send report',
-											'nhrrob-issue-reporter'
-									  ) }
-							</Button>
+						) }
+						<div className={ P + 'env__foot' }>
+							<span>
+								{ __(
+									'Sent exactly as shown. The site address is never added.',
+									'nhrrob-issue-reporter'
+								) }
+							</span>
+							{ ! asText && (
+								<Button
+									small
+									variant="link"
+									onClick={ () => {
+										setEnvironment( sentEnvironment );
+										setOff( [] );
+										setAsText( true );
+									} }
+								>
+									{ __(
+										'Edit as text',
+										'nhrrob-issue-reporter'
+									) }
+								</Button>
+							) }
 						</div>
-					</form>
-				</Panel>
+					</Step>
+
+					<div className={ P + 'form__foot' }>
+						<span className={ P + 'form__where' }>
+							{ target ? (
+								<>
+									{ __(
+										'Opens an issue in',
+										'nhrrob-issue-reporter'
+									) }{ ' ' }
+									<strong>{ target.repo }</strong>
+								</>
+							) : (
+								__(
+									'Choose where it goes first.',
+									'nhrrob-issue-reporter'
+								)
+							) }
+							{ hasDraft && (
+								<span className={ P + 'form__draft' }>
+									<Icon name="check" size={ 13 } />
+									{ __(
+										'Draft kept in this browser',
+										'nhrrob-issue-reporter'
+									) }
+								</span>
+							) }
+						</span>
+						{ hasDraft && (
+							<Button
+								variant="ghost"
+								disabled={ sending }
+								onClick={ clear }
+							>
+								{ __( 'Clear', 'nhrrob-issue-reporter' ) }
+							</Button>
+						) }
+						<Button
+							variant="primary"
+							type="submit"
+							disabled={ ! ready || sending || blocked }
+						>
+							{ sending
+								? __( 'Sending…', 'nhrrob-issue-reporter' )
+								: __( 'Send report', 'nhrrob-issue-reporter' ) }
+							<kbd className={ P + 'kbd' }>
+								{ isMac ? '⌘↵' : 'Ctrl ↵' }
+							</kbd>
+						</Button>
+					</div>
+				</form>
 
 				<div className={ P + 'aside' }>
 					<Panel
-						title={ __( 'Where it goes', 'nhrrob-issue-reporter' ) }
-						icon="repo"
+						title={ __( 'Live preview', 'nhrrob-issue-reporter' ) }
+						meta={ __(
+							'as it will look on GitHub',
+							'nhrrob-issue-reporter'
+						) }
 					>
-						{ plugin ? (
-							<>
-								<p>
-									<External
-										href={
-											'https://github.com/' +
-											plugin.repo +
-											'/issues'
-										}
-									>
-										{ plugin.repo }
-									</External>
-								</p>
-								<p className={ P + 'muted' }>
-									{ __(
-										'If this repository is public, anyone can read the issue. Check the Environment box before sending.',
+						<div className={ P + 'preview' }>
+							<span className={ P + 'preview__repo' }>
+								{ target
+									? target.repo
+									: __(
+											'No repository chosen',
+											'nhrrob-issue-reporter'
+									  ) }
+							</span>
+							<strong className={ P + 'preview__title' }>
+								{ title ||
+									__(
+										'Your title appears here',
 										'nhrrob-issue-reporter'
 									) }
-								</p>
-							</>
-						) : (
+							</strong>
+							{ [
+								[
+									__(
+										'What happened',
+										'nhrrob-issue-reporter'
+									),
+									what,
+								],
+								[
+									__(
+										'Steps to reproduce',
+										'nhrrob-issue-reporter'
+									),
+									steps,
+								],
+								[
+									__(
+										'Screenshots',
+										'nhrrob-issue-reporter'
+									),
+									images.length
+										? sprintf(
+												/* translators: %d: number of images. */
+												_n(
+													'%d linked image',
+													'%d linked images',
+													images.length,
+													'nhrrob-issue-reporter'
+												),
+												images.length
+										  )
+										: '',
+								],
+								[
+									__(
+										'Environment',
+										'nhrrob-issue-reporter'
+									),
+									sentEnvironment,
+								],
+							]
+								.filter( ( [ , text ] ) => text.trim() )
+								.map( ( [ heading, text ] ) => (
+									<div
+										key={ heading }
+										className={ P + 'preview__part' }
+									>
+										<span
+											className={ P + 'preview__heading' }
+										>
+											{ heading }
+										</span>
+										<span className={ P + 'preview__text' }>
+											{ text }
+										</span>
+									</div>
+								) ) }
 							<p className={ P + 'muted' }>
 								{ __(
-									'Choose a plugin to see its repository.',
+									'If the repository is public, anyone can read the issue.',
 									'nhrrob-issue-reporter'
 								) }
 							</p>
-						) }
+						</div>
 					</Panel>
 
 					<Panel
 						title={ __(
-							'Similar open issues',
+							'Possible duplicates',
 							'nhrrob-issue-reporter'
 						) }
-						icon="search"
 						meta={
 							searching
 								? __( 'Searching…', 'nhrrob-issue-reporter' )
 								: ''
 						}
-						flush={ !! ( similar && similar.length ) }
+						actions={
+							similar &&
+							similar.length > 0 && (
+								<span className={ P + 'count' }>
+									{ similar.length }
+								</span>
+							)
+						}
 					>
 						{ similar === null && (
 							<p className={ P + 'muted' }>
 								{ __(
-									'Choose a plugin and type a title. Open issues with a similar title show up here, so you can add your text to one as a comment instead of opening another.',
+									'Choose where it goes and type a title. Open issues with a similar title show up here, so you can add to one instead of opening another.',
 									'nhrrob-issue-reporter'
 								) }
 							</p>
@@ -598,7 +821,6 @@ export default function Report( { boot, data, setData, navigate } ) {
 										</External>
 										<Button
 											small
-											variant="soft"
 											disabled={
 												!! commenting ||
 												sending ||
@@ -614,7 +836,7 @@ export default function Report( { boot, data, setData, navigate } ) {
 														'nhrrob-issue-reporter'
 												  )
 												: __(
-														'Add as comment',
+														'Comment instead',
 														'nhrrob-issue-reporter'
 												  ) }
 										</Button>

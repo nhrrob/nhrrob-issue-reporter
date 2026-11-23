@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Report Issue: widget on a client site, Aurora</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; color: {{t.ink}}; background: #e9ebf2; min-height: 900px; padding: 20px 16px; box-sizing: border-box">
+  <div style="position: relative; max-width: 1400px; min-height: 860px; margin: 0 auto; border-radius: 14px; overflow: hidden; background: #ffffff; box-shadow: 0 20px 50px rgba(20,22,43,0.12)">
+
+    <div aria-hidden="true" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; background: #f1f2f6; border-bottom: 1px solid #e3e5ec">
+      <span style="width: 10px; height: 10px; border-radius: 50%; background: #f87171"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: #fbbf24"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: #34d399"></span>
+      <span style="margin-left: 16px; flex: 0 1 420px; height: 22px; border-radius: 6px; background: #ffffff; border: 1px solid #e3e5ec"></span>
+    </div>
+    <div aria-hidden="true" style="display: flex; align-items: center; gap: 24px; padding: 18px 36px; border-bottom: 1px solid #f0f1f4">
+      <div style="width: 120px; height: 22px; border-radius: 5px; background: #cfd5df"></div><span style="flex: 1 1 auto"></span>
+      <div style="width: 60px; height: 10px; border-radius: 5px; background: #e1e5eb"></div><div style="width: 60px; height: 10px; border-radius: 5px; background: #e1e5eb"></div><div style="width: 100px; height: 38px; border-radius: 9px; background: #0f766e"></div>
+    </div>
+    <div aria-hidden="true" style="padding: 60px 36px 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 85%; height: 38px; border-radius: 7px; background: #cfd5df"></div>
+        <div style="width: 58%; height: 38px; border-radius: 7px; background: #cfd5df"></div>
+        <div style="width: 90%; height: 12px; border-radius: 6px; background: #e8ebf0; margin-top: 10px"></div>
+        <div style="width: 78%; height: 12px; border-radius: 6px; background: #e8ebf0"></div>
+        <div style="width: 170px; height: 50px; border-radius: 10px; background: #0f766e; margin-top: 18px"></div>
+      </div>
+      <div style="height: 310px; border-radius: 14px; background: #e3e7ed"></div>
+    </div>
+    <div aria-hidden="true" style="padding: 0 36px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+      <div style="height: 150px; border-radius: 12px; background: #f3f4f7"></div><div style="height: 150px; border-radius: 12px; background: #f3f4f7"></div><div style="height: 150px; border-radius: 12px; background: #f3f4f7"></div>
+    </div>
+
+    <sc-if value="{{idle}}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{start}}" style="position: absolute; right: 24px; bottom: 24px; display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 20px 0 16px; border: 0; border-radius: 999px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; font: inherit; font-weight: 600; box-shadow: 0 10px 28px rgba(99,102,241,0.45); cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Feedback</button>
+    </sc-if>
+
+    <sc-if value="{{annotating}}" hint-placeholder-val="{{ true }}">
+      <div aria-hidden="true" style="position: absolute; inset: 38px 0 0 0; background: rgba(20,22,43,0.32)"></div>
+      <div aria-hidden="true" style="position: absolute; left: 26px; top: 356px; width: 196px; height: 76px; border: 3px solid #f97316; border-radius: 12px; background: rgba(249,115,22,0.08); box-shadow: 0 0 0 4px rgba(249,115,22,0.18)"></div>
+      <span aria-hidden="true" style="position: absolute; left: 12px; top: 342px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #f97316; color: #ffffff; font-weight: 700; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.3)">1</span>
+
+      <div role="toolbar" aria-label="Annotate" style="position: absolute; left: 50%; top: 56px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 14px; background: {{t.bar}}; border: 1px solid {{t.barLine}}; box-shadow: 0 12px 30px rgba(0,0,0,0.25)">
+        <sc-for list="{{tools}}" as="tl" hint-placeholder-count="5">
+          <button type="button" aria-label="{{tl.label}}" aria-pressed="{{tl.on}}" onClick="{{tl.pick}}" style="width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: {{tl.bg}}; color: {{tl.ink}}; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tl.icon}}"></path></svg></button>
+        </sc-for>
+        <span style="width: 1px; height: 24px; background: {{t.barLine}}; margin: 0 4px"></span>
+        <span style="width: 20px; height: 20px; border-radius: 50%; background: #f97316; box-shadow: 0 0 0 2px {{t.bar}}, 0 0 0 4px #f97316; margin: 0 8px"></span>
+        <button type="button" onClick="{{stop}}" style="min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: {{t.muted}}; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Cancel</button>
+      </div>
+
+      <aside aria-label="Send feedback" style="position: absolute; right: 18px; top: 56px; bottom: 18px; width: 380px; max-width: calc(100% - 36px); box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid {{t.line}}; border-radius: 18px; background: {{t.surface}}; box-shadow: 0 24px 60px rgba(20,22,43,0.3); overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid {{t.line}}">
+          <span style="width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+          <strong style="flex: 1 1 auto; font-size: 15px; font-weight: 600">Send feedback</strong>
+          <button type="button" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}" style="width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: {{t.muted}}; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></button>
+          <button type="button" aria-label="Close" onClick="{{stop}}" style="width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: {{t.muted}}; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div style="flex: 1 1 auto; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 16px">
+          <div style="position: relative; height: 132px; border: 1px solid {{t.line}}; border-radius: 12px; background: {{t.field}}; overflow: hidden">
+            <div style="height: 16px; background: {{t.track}}"></div>
+            <span style="position: absolute; left: 16px; top: 74px; width: 56px; height: 22px; border: 2px solid #f97316; border-radius: 5px"></span>
+            <span style="position: absolute; right: 8px; bottom: 8px; padding: 0 8px; border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.line}}; font-size: 11px; font-weight: 600; color: {{t.muted}}">1 mark</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="aw-what" style="font-size: 13px; font-weight: 600">What's wrong?</label>
+            <textarea id="aw-what" rows="4" style="padding: 12px 14px; border: 1px solid {{t.accent}}; border-radius: 12px; background: {{t.surface}}; color: {{t.ink}}; font: inherit; resize: vertical; box-shadow: 0 0 0 4px {{t.ring}}; outline: none">The "Book now" button does nothing on my phone.</textarea>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 600">Kind</span>
+            <div role="radiogroup" aria-label="Kind" style="display: inline-flex; padding: 3px; border-radius: 11px; background: {{t.track}}">
+              <sc-for list="{{kinds}}" as="k" hint-placeholder-count="3">
+                <button type="button" role="radio" aria-checked="{{k.on}}" onClick="{{k.pick}}" style="flex: 1 1 auto; min-height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: {{k.bg}}; color: {{k.ink}}; font: inherit; font-size: 13px; font-weight: 600; box-shadow: {{k.shadow}}; cursor: pointer">{{k.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding: 12px 14px; border-radius: 12px; background: {{t.field}}; border: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 8px">
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: {{t.muted}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>Added for the developer</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <sc-for list="{{captured}}" as="cap" hint-placeholder-count="5"><span style="padding: 1px 9px; border-radius: 999px; background: {{cap.bg}}; color: {{cap.ink}}; font-size: 12px; font-weight: 500">{{cap.label}}</span></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="padding: 14px 18px; border-top: 1px solid {{t.line}}; display: flex; align-items: center; gap: 10px">
+          <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: {{t.accentSoft}}; color: {{t.accentText}}; font-size: 12px; font-weight: 700">S</span>
+          <span style="flex: 1 1 auto; font-size: 12px; color: {{t.muted}}">Sara · Editor</span>
+          <button type="button" style="display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; font: inherit; font-weight: 600; box-shadow: 0 6px 16px rgba(99,102,241,0.35); cursor: pointer">Send<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"></path></svg></button>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark ?? this.props.dark ?? false;
+    const t = dark ? {
+      ink: '#eceef3', muted: '#9095a3', surface: '#131419', field: '#0f1014', track: '#1e2027', line: '#22242c',
+      accent: '#8b95ff', accentText: '#aab2ff', accentSoft: '#1d2036', ring: 'rgba(139,149,255,0.22)', bar: '#131419', barLine: '#2a2d37', barOn: '#1d2036', barOnInk: '#ffffff', barInk: '#c5c8d1', tabOn: '#2a2d37'
+    } : {
+      ink: '#14162b', muted: '#5f6480', surface: '#ffffff', field: '#f8f9fd', track: '#eef0f6', line: '#e8eaf2',
+      accent: '#5b52f0', accentText: '#4338ca', accentSoft: '#eef0ff', ring: 'rgba(91,82,240,0.16)', bar: '#ffffff', barLine: '#e8eaf2', barOn: '#eef0ff', barOnInk: '#4338ca', barInk: '#3d4160', tabOn: '#ffffff'
+    };
+    const on = s.on ?? true;
+    const tool = s.tool || 'box';
+    const tools = [['box', 'Box', 'M4 6h16v12H4z'], ['arrow', 'Arrow', 'M5 19L19 5M9 5h10v10'], ['pen', 'Draw', 'M3 21c3-1 5-3 7-6l9-9a2 2 0 0 0-3-3l-9 9c-3 2-5 4-6 7z'], ['text', 'Text', 'M4 7V5h16v2M12 5v14M9 19h6'], ['blur', 'Blur private details', 'M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.4 3M6.6 6.6C4.3 8.1 3 12 3 12s4 6 9 6a9 9 0 0 0 4.4-1.1']].map(([id, label, icon]) => ({
+      label, icon, on: tool === id ? 'true' : 'false', bg: tool === id ? t.barOn : 'transparent', ink: tool === id ? t.barOnInk : t.barInk,
+      pick: () => this.setState({ tool: id })
+    }));
+    const kind = s.kind || 'bug';
+    const kinds = [['bug', 'Bug'], ['change', 'Change'], ['question', 'Question']].map(([id, label]) => ({
+      label, on: kind === id ? 'true' : 'false', bg: kind === id ? t.tabOn : 'transparent', ink: kind === id ? t.ink : t.muted,
+      shadow: kind === id ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', pick: () => this.setState({ kind: id })
+    }));
+    const chip = (label, warn) => ({ label, bg: warn ? (dark ? '#2c1517' : '#feecec') : t.surface, ink: warn ? (dark ? '#ff8589' : '#c8282e') : t.ink });
+    return {
+      t, idle: !on, annotating: on,
+      themeLabel: dark ? 'Switch to light' : 'Switch to dark',
+      toggleTheme: () => this.setState({ dark: !dark }),
+      start: () => this.setState({ on: true }), stop: () => this.setState({ on: false }),
+      tools, kinds,
+      captured: [chip('/book'), chip('Safari 19 · iPhone'), chip('390 × 844'), chip('2 console errors', true), chip('Astra 4.9'), chip('WordPress 7.1')]
+    };
+  }
+}
+</script>
+</body>
+</html>

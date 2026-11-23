@@ -5,7 +5,7 @@
  * Description: Report an issue with a plugin to its GitHub repository, without leaving the dashboard.
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/
- * Version: 0.3.0
+ * Version: 0.4.0
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Text Domain: nhrrob-issue-reporter
@@ -31,7 +31,7 @@ final class NHRRob_Issue_Reporter {
 	 *
 	 * @var string
 	 */
-	const VERSION = '0.3.0';
+	const VERSION = '0.4.0';
 
 	/**
 	 * Class constructor

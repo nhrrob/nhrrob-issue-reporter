@@ -1,26 +1,29 @@
 /**
- * Settings: the GitHub token and the repository of each plugin.
+ * Settings: the GitHub connection, and the repository of each plugin, theme
+ * and other repository, with search and filters.
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import api from '../api';
-import { GROUPS } from './Report';
+import { GROUPS, TYPE_ICON } from '../components/TargetPicker';
 import { useToast } from '../components/ToastProvider';
 import {
 	Button,
 	Field,
-	Note,
+	Icon,
 	Panel,
 	Pill,
 	ScreenHeader,
+	SearchBox,
+	Segmented,
 } from '../components/ui';
 
 const P = 'nhrrob-issue-reporter-';
 
 export default function Settings( { data, setData } ) {
 	const toast = useToast();
-	const [ token, setToken ] = useState( '' );
+	const [ tab, setTab ] = useState( data.hasToken ? 'repos' : 'github' );
 	const [ busy, setBusy ] = useState( false );
 
 	const save = ( patch, message ) => {
@@ -38,89 +41,211 @@ export default function Settings( { data, setData } ) {
 			.finally( () => setBusy( false ) );
 	};
 
-	const targets = data.plugins.filter( ( p ) => p.type !== 'repo' );
-	const extra = data.plugins
-		.filter( ( p ) => p.type === 'repo' )
-		.map( ( p ) => ( { label: p.name, repo: p.repo } ) );
-
-	// The server replaces the whole map, so every row is sent with the change.
-	const saveRepo = ( file, value ) => {
-		const repos = {};
-		targets.forEach( ( p ) => {
-			repos[ p.file ] = p.file === file ? value : p.repo;
-		} );
-		return save( { repos } );
-	};
-
-	// The same for the other repositories: the whole list is sent.
-	const saveExtra = ( rows, message ) => save( { extra: rows }, message );
-
-	let tokenPill = (
-		<Pill tone="warn">{ __( 'Not set', 'nhrrob-issue-reporter' ) }</Pill>
-	);
-	if ( data.tokenInConfig ) {
-		tokenPill = (
-			<Pill tone="ok">
-				{ __( 'Set in wp-config.php', 'nhrrob-issue-reporter' ) }
-			</Pill>
-		);
-	} else if ( data.hasToken ) {
-		tokenPill = (
-			<Pill tone="info">
-				{ __( 'Saved in the database', 'nhrrob-issue-reporter' ) }
-			</Pill>
-		);
-	}
+	const set = data.plugins.filter( ( p ) => p.repo ).length;
 
 	return (
 		<>
 			<ScreenHeader
 				title={ __( 'Settings', 'nhrrob-issue-reporter' ) }
 				lede={ __(
-					'Reports are sent with a GitHub token, to the repository set for each plugin.',
+					'Reports are sent with a GitHub token, to the repository set for each plugin and theme.',
 					'nhrrob-issue-reporter'
 				) }
 			/>
 
-			<Panel
-				title={ __( 'GitHub token', 'nhrrob-issue-reporter' ) }
-				icon="key"
-				actions={ tokenPill }
+			<div
+				className={ P + 'tabs' }
+				role="tablist"
+				aria-label={ __( 'Settings', 'nhrrob-issue-reporter' ) }
 			>
-				<p className={ P + 'muted' }>
-					{ __(
-						'Create a fine-grained personal access token that covers only the repositories below, with one permission: “Issues: Read and write”.',
-						'nhrrob-issue-reporter'
-					) }
-				</p>
-				{ data.tokenInConfig ? (
-					<Note>
-						{ __(
-							'The token is set in wp-config.php with NHRROB_ISSUE_REPORTER_TOKEN, so it is not stored in the database.',
-							'nhrrob-issue-reporter'
-						) }
-					</Note>
-				) : (
-					<form
-						className={ P + 'inline' }
-						autoComplete="off"
-						onSubmit={ ( event ) => {
-							event.preventDefault();
-							save(
-								{ token },
-								__( 'Token saved', 'nhrrob-issue-reporter' )
-							).then( ( ok ) => ok && setToken( '' ) );
-						} }
+				{ [
+					[ 'github', __( 'GitHub', 'nhrrob-issue-reporter' ), '' ],
+					[
+						'repos',
+						__( 'Repositories', 'nhrrob-issue-reporter' ),
+						String( set ),
+					],
+				].map( ( [ id, label, badge ] ) => (
+					<button
+						key={ id }
+						type="button"
+						role="tab"
+						aria-selected={ tab === id }
+						className={
+							P + 'tabs__tab' + ( tab === id ? ' is-on' : '' )
+						}
+						onClick={ () => setTab( id ) }
 					>
-						<Field
-							id={ P + 'token' }
-							label={ __( 'Token', 'nhrrob-issue-reporter' ) }
-							help={ __(
-								'To keep it out of the database, define NHRROB_ISSUE_REPORTER_TOKEN in wp-config.php and leave this empty.',
+						{ label }
+						{ badge && (
+							<span className={ P + 'tabs__badge' }>
+								{ badge }
+							</span>
+						) }
+					</button>
+				) ) }
+			</div>
+
+			{ tab === 'github' ? (
+				<Connection data={ data } busy={ busy } save={ save } />
+			) : (
+				<Repositories data={ data } busy={ busy } save={ save } />
+			) }
+		</>
+	);
+}
+
+function Connection( { data, busy, save } ) {
+	const [ token, setToken ] = useState( '' );
+	const someRepo = data.plugins.some( ( p ) => p.repo );
+
+	let pill = (
+		<Pill tone="warn">
+			{ __( 'Not connected', 'nhrrob-issue-reporter' ) }
+		</Pill>
+	);
+	if ( data.hasToken ) {
+		pill = (
+			<Pill tone="ok">
+				{ __( 'Connected', 'nhrrob-issue-reporter' ) }
+			</Pill>
+		);
+	}
+
+	const steps = [
+		{
+			done: data.hasToken,
+			title: __(
+				'Make a fine-grained token on GitHub',
+				'nhrrob-issue-reporter'
+			),
+			note: __(
+				'Choose only the repositories you report to, with one permission: “Issues: Read and write”.',
+				'nhrrob-issue-reporter'
+			),
+			link: 'https://github.com/settings/personal-access-tokens/new',
+		},
+		{
+			done: data.hasToken,
+			title: __(
+				'Add it to wp-config.php, or paste it here',
+				'nhrrob-issue-reporter'
+			),
+			note: __(
+				'define( ‘NHRROB_ISSUE_REPORTER_TOKEN’, ‘…’ ); in wp-config.php keeps it out of the database.',
+				'nhrrob-issue-reporter'
+			),
+		},
+		{
+			done: data.hasToken && someRepo,
+			title: __( 'Check the repositories', 'nhrrob-issue-reporter' ),
+			note: __(
+				'Most plugins name theirs. A new one is checked with GitHub when you save it.',
+				'nhrrob-issue-reporter'
+			),
+		},
+	];
+
+	return (
+		<section className={ P + 'panel' }>
+			<header className={ P + 'conncard' }>
+				<span className={ P + 'brand__mark is-lg' }>
+					<Icon name="link" size={ 20 } />
+				</span>
+				<span className={ P + 'conncard__text' }>
+					<strong>
+						{ __( 'GitHub connection', 'nhrrob-issue-reporter' ) }
+					</strong>
+					<span>
+						{ data.tokenInConfig &&
+							__(
+								'Token set in wp-config.php',
 								'nhrrob-issue-reporter'
 							) }
+						{ ! data.tokenInConfig &&
+							data.hasToken &&
+							__(
+								'Token saved in the database',
+								'nhrrob-issue-reporter'
+							) }
+						{ ! data.hasToken &&
+							__(
+								'No token yet. Reports cannot be sent.',
+								'nhrrob-issue-reporter'
+							) }
+					</span>
+				</span>
+				{ pill }
+			</header>
+			<div className={ P + 'conncard__body' }>
+				<ol className={ P + 'checklist' }>
+					{ steps.map( ( s ) => (
+						<li
+							key={ s.title }
+							className={ s.done ? 'is-done' : '' }
 						>
-							<div className={ P + 'inline__row' }>
+							<span className={ P + 'checklist__mark' }>
+								{ s.done ? (
+									<Icon name="check" size={ 13 } />
+								) : (
+									steps.indexOf( s ) + 1
+								) }
+							</span>
+							<span className={ P + 'checklist__text' }>
+								<strong>
+									{ s.link ? (
+										<a
+											href={ s.link }
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											{ s.title }
+										</a>
+									) : (
+										s.title
+									) }
+								</strong>
+								<span>{ s.note }</span>
+							</span>
+						</li>
+					) ) }
+				</ol>
+
+				<div className={ P + 'tokenbox' }>
+					{ data.tokenInConfig ? (
+						<>
+							<strong>
+								{ __(
+									'The token is set in wp-config.php',
+									'nhrrob-issue-reporter'
+								) }
+							</strong>
+							<p className={ P + 'muted' }>
+								{ __(
+									'It is not stored in the database, and it is changed there.',
+									'nhrrob-issue-reporter'
+								) }
+							</p>
+						</>
+					) : (
+						<form
+							autoComplete="off"
+							onSubmit={ ( event ) => {
+								event.preventDefault();
+								save(
+									{ token },
+									__( 'Token saved', 'nhrrob-issue-reporter' )
+								).then( ( ok ) => ok && setToken( '' ) );
+							} }
+						>
+							<Field
+								id={ P + 'token' }
+								label={ __( 'Token', 'nhrrob-issue-reporter' ) }
+								help={ __(
+									'Kept on this server and sent to api.github.com only. It never appears on a page again.',
+									'nhrrob-issue-reporter'
+								) }
+							>
 								<input
 									id={ P + 'token' }
 									className={ P + 'input is-mono' }
@@ -139,6 +264,8 @@ export default function Settings( { data, setData } ) {
 										setToken( e.target.value )
 									}
 								/>
+							</Field>
+							<div className={ P + 'tokenbox__actions' }>
 								<Button
 									variant="primary"
 									type="submit"
@@ -164,76 +291,180 @@ export default function Settings( { data, setData } ) {
 										}
 									>
 										{ __(
-											'Remove',
+											'Remove token',
 											'nhrrob-issue-reporter'
 										) }
 									</Button>
 								) }
 							</div>
-						</Field>
-					</form>
-				) }
-			</Panel>
+						</form>
+					) }
+				</div>
+			</div>
+		</section>
+	);
+}
 
-			<Panel
-				title={ __( 'Repositories', 'nhrrob-issue-reporter' ) }
-				icon="repo"
-				meta={ __(
-					'Saved when you leave a field',
-					'nhrrob-issue-reporter'
+function Repositories( { data, busy, save } ) {
+	const [ filter, setFilter ] = useState( 'set' );
+	const [ search, setSearch ] = useState( '' );
+
+	const targets = data.plugins.filter( ( p ) => p.type !== 'repo' );
+	const extra = data.plugins
+		.filter( ( p ) => p.type === 'repo' )
+		.map( ( p ) => ( { label: p.name, repo: p.repo } ) );
+
+	const source = ( p ) => {
+		if ( ! p.repo ) {
+			return 'unset';
+		}
+		return p.repo === p.detected ? 'header' : 'here';
+	};
+
+	// The server replaces the whole map, so every row is sent with the change.
+	const saveRepo = ( file, value ) => {
+		const repos = {};
+		targets.forEach( ( p ) => {
+			repos[ p.file ] = p.file === file ? value : p.repo;
+		} );
+		return save( { repos } );
+	};
+
+	// The same for the other repositories: the whole list is sent.
+	const saveExtra = ( list, message ) => save( { extra: list }, message );
+
+	const count = ( id ) =>
+		targets.filter( ( p ) => {
+			const s = source( p );
+			return (
+				id === 'all' || ( id === 'set' && s !== 'unset' ) || id === s
+			);
+		} ).length;
+
+	const q = search.trim().toLowerCase();
+	const shown = targets.filter( ( p ) => {
+		const s = source( p );
+		const byFilter =
+			filter === 'all' ||
+			( filter === 'set' && s !== 'unset' ) ||
+			filter === s;
+		return (
+			byFilter &&
+			( ! q ||
+				p.name.toLowerCase().includes( q ) ||
+				( p.repo || '' ).toLowerCase().includes( q ) )
+		);
+	} );
+
+	return (
+		<>
+			<Panel flush>
+				<div className={ P + 'toolbar' }>
+					<Segmented
+						label={ __( 'Show', 'nhrrob-issue-reporter' ) }
+						value={ filter }
+						onChange={ setFilter }
+						options={ [
+							{
+								value: 'set',
+								label: __(
+									'Has a repository',
+									'nhrrob-issue-reporter'
+								),
+								count: count( 'set' ),
+							},
+							{
+								value: 'unset',
+								label: __( 'Not set', 'nhrrob-issue-reporter' ),
+								count: count( 'unset' ),
+							},
+							{
+								value: 'here',
+								label: __(
+									'Set here',
+									'nhrrob-issue-reporter'
+								),
+								count: count( 'here' ),
+							},
+							{
+								value: 'all',
+								label: __( 'All', 'nhrrob-issue-reporter' ),
+								count: count( 'all' ),
+							},
+						] }
+					/>
+					<SearchBox
+						label={ __(
+							'Search plugins and themes',
+							'nhrrob-issue-reporter'
+						) }
+						value={ search }
+						onChange={ setSearch }
+					/>
+				</div>
+				{ ! shown.length && (
+					<p className={ P + 'empty is-small' }>
+						{ __( 'Nothing matches.', 'nhrrob-issue-reporter' ) }
+					</p>
 				) }
-				flush
-			>
-				<div className={ P + 'scroll' }>
-					<table className={ P + 'grid' }>
-						<thead>
-							<tr>
-								<th scope="col">
-									{ __(
-										'Plugin or theme',
-										'nhrrob-issue-reporter'
-									) }
-								</th>
-								<th scope="col">
-									{ __(
-										'Repository',
-										'nhrrob-issue-reporter'
-									) }
-								</th>
-								<th scope="col">
-									{ __( 'Source', 'nhrrob-issue-reporter' ) }
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{ targets.map( ( p ) => (
-								<RepoRow
-									key={ p.file + '|' + p.repo }
-									plugin={ p }
-									onSave={ saveRepo }
-								/>
-							) ) }
-						</tbody>
-					</table>
+				{ GROUPS.filter( ( [ type ] ) => type !== 'repo' ).map(
+					( [ type, label ] ) => {
+						const list = shown.filter( ( p ) => p.type === type );
+						return (
+							list.length > 0 && (
+								<div key={ type }>
+									<div className={ P + 'group' }>
+										{ label + ' · ' + list.length }
+									</div>
+									<ul className={ P + 'rows' }>
+										{ list.map( ( p ) => (
+											<RepoRow
+												key={ p.file + '|' + p.repo }
+												plugin={ p }
+												source={ source( p ) }
+												onSave={ saveRepo }
+											/>
+										) ) }
+									</ul>
+								</div>
+							)
+						);
+					}
+				) }
+				<div className={ P + 'panel__foot' }>
+					<span>
+						{ __(
+							'A repository saves when you leave its field, once GitHub confirms the token can reach it.',
+							'nhrrob-issue-reporter'
+						) }
+					</span>
 				</div>
 			</Panel>
 
 			<Panel
 				title={ __( 'Other repositories', 'nhrrob-issue-reporter' ) }
-				icon="repo"
+				meta={ __(
+					'Not a plugin or theme here, such as an app the site talks to',
+					'nhrrob-issue-reporter'
+				) }
 			>
-				<p className={ P + 'muted' }>
-					{ __(
-						'Repositories that are not a plugin or theme on this site, such as an app it talks to. They are listed in the form under their label.',
-						'nhrrob-issue-reporter'
-					) }
-				</p>
 				{ extra.length > 0 && (
-					<ul className={ P + 'extra' }>
+					<ul className={ P + 'rows is-tight' }>
 						{ extra.map( ( row ) => (
-							<li key={ row.repo }>
-								<span>{ row.label }</span>
-								<span className="is-mono">{ row.repo }</span>
+							<li key={ row.repo } className={ P + 'row' }>
+								<span
+									className={
+										P + 'tile ' + P + 'tile--accent'
+									}
+								>
+									<Icon name="repo" size={ 16 } />
+								</span>
+								<span className={ P + 'row__main' }>
+									<strong>{ row.label }</strong>
+									<span className={ P + 'row__meta is-mono' }>
+										{ row.repo }
+									</span>
+								</span>
 								<Button
 									small
 									variant="danger"
@@ -287,78 +518,83 @@ function ExtraForm( { busy, onAdd } ) {
 				} );
 			} }
 		>
-			<div className={ P + 'inline__row' }>
-				<Field
+			<Field
+				id={ P + 'extra-label' }
+				label={ __( 'Label', 'nhrrob-issue-reporter' ) }
+			>
+				<input
 					id={ P + 'extra-label' }
-					label={ __( 'Label', 'nhrrob-issue-reporter' ) }
-				>
-					<input
-						id={ P + 'extra-label' }
-						className={ P + 'input' }
-						type="text"
-						maxLength={ 100 }
-						value={ label }
-						onChange={ ( e ) => setLabel( e.target.value ) }
-					/>
-				</Field>
-				<Field
+					className={ P + 'input' }
+					type="text"
+					maxLength={ 100 }
+					value={ label }
+					onChange={ ( e ) => setLabel( e.target.value ) }
+				/>
+			</Field>
+			<Field
+				id={ P + 'extra-repo' }
+				label={ __( 'Repository', 'nhrrob-issue-reporter' ) }
+			>
+				<input
 					id={ P + 'extra-repo' }
-					label={ __( 'Repository', 'nhrrob-issue-reporter' ) }
-				>
-					<input
-						id={ P + 'extra-repo' }
-						className={ P + 'input is-mono' }
-						type="text"
-						placeholder="owner/name"
-						required
-						value={ repo }
-						onChange={ ( e ) => setRepo( e.target.value ) }
-					/>
-				</Field>
-				<Button
-					variant="primary"
-					type="submit"
-					disabled={ busy || ! repo.trim() }
-				>
-					{ __( 'Add', 'nhrrob-issue-reporter' ) }
-				</Button>
-			</div>
+					className={ P + 'input is-mono' }
+					type="text"
+					placeholder="owner/name"
+					required
+					value={ repo }
+					onChange={ ( e ) => setRepo( e.target.value ) }
+				/>
+			</Field>
+			<Button
+				variant="primary"
+				type="submit"
+				disabled={ busy || ! repo.trim() }
+			>
+				<Icon name="plus" size={ 15 } />
+				{ __( 'Add repository', 'nhrrob-issue-reporter' ) }
+			</Button>
 		</form>
 	);
 }
 
-function RepoRow( { plugin, onSave } ) {
+function RepoRow( { plugin, source, onSave } ) {
 	const [ value, setValue ] = useState( plugin.repo );
 	const id = P + 'repo-' + plugin.file.replace( /[^a-z0-9]+/gi, '-' );
 
-	let source = (
-		<Pill tone="off">{ __( 'Not set', 'nhrrob-issue-reporter' ) }</Pill>
-	);
-	if ( plugin.repo && plugin.repo === plugin.detected ) {
-		source = (
-			<Pill tone="info">
-				{ __( 'From the plugin', 'nhrrob-issue-reporter' ) }
-			</Pill>
-		);
-	} else if ( plugin.repo ) {
-		source = (
-			<Pill tone="ok">{ __( 'Set here', 'nhrrob-issue-reporter' ) }</Pill>
-		);
-	}
+	const sources = {
+		header: __( 'From the plugin’s header', 'nhrrob-issue-reporter' ),
+		here: __( 'Set here', 'nhrrob-issue-reporter' ),
+		unset: __( 'No GitHub address in its header', 'nhrrob-issue-reporter' ),
+	};
 
 	return (
-		<tr>
-			<td className="is-wrap">
-				<label htmlFor={ id }>{ plugin.name }</label>
-				<div className={ P + 'sub' }>
-					{ GROUPS.find( ( g ) => g[ 0 ] === plugin.type )[ 1 ] }
-					{ plugin.version && ' · ' + plugin.version }
-				</div>
-			</td>
-			<td>
+		<li className={ P + 'row' }>
+			<span
+				className={
+					P +
+					'tile ' +
+					P +
+					'tile--' +
+					( source === 'unset' ? 'muted' : 'accent' )
+				}
+			>
+				<Icon name={ TYPE_ICON[ plugin.type ] } size={ 16 } />
+			</span>
+			<span className={ P + 'row__main' }>
+				<label htmlFor={ id } className={ P + 'row__name' }>
+					{ plugin.name }
+					{ plugin.version && (
+						<span className={ P + 'muted' }>
+							{ ' ' + plugin.version }
+						</span>
+					) }
+				</label>
+				<span className={ P + 'row__meta' }>{ sources[ source ] }</span>
+			</span>
+			<span className={ P + 'repo-input' }>
+				<Icon name="repo" size={ 14 } />
 				<input
 					id={ id }
-					className={ P + 'input is-mono' }
 					type="text"
 					placeholder="owner/name"
 					value={ value }
@@ -376,8 +612,16 @@ function RepoRow( { plugin, onSave } ) {
 						}
 					} }
 				/>
-			</td>
-			<td>{ source }</td>
-		</tr>
+			</span>
+			<span
+				className={
+					P + 'state' + ( source === 'unset' ? '' : ' is-ok' )
+				}
+			>
+				{ source === 'unset'
+					? __( 'Not set', 'nhrrob-issue-reporter' )
+					: __( 'Set', 'nhrrob-issue-reporter' ) }
+			</span>
+		</li>
 	);
 }
