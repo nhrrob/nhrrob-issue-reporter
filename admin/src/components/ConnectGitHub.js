@@ -149,7 +149,7 @@ export default function ConnectGitHub( { setData } ) {
 			<strong>{ __( 'Connect GitHub', 'nhrrob-issue-reporter' ) }</strong>
 			<p className={ P + 'muted' }>
 				{ __(
-					'Approve this site on github.com with a short code. Reports are then opened as you.',
+					'Approve this site on github.com with a short code. Reports are then opened as you. GitHub’s page names the app “NHR Issue Reporter” by nhrrob; approve only when you started it here.',
 					'nhrrob-issue-reporter'
 				) }
 			</p>

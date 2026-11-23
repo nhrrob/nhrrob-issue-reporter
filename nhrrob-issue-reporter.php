@@ -4,7 +4,7 @@
  * Description: Client feedback and bug reports for WordPress: a Report button with screenshot markup, an Inbox, and issues sent to GitHub.
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/
- * Version: 0.5.0
+ * Version: 0.5.1
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Text Domain: nhrrob-issue-reporter
@@ -30,7 +30,7 @@ final class NHRRob_Issue_Reporter {
 	 *
 	 * @var string
 	 */
-	const VERSION = '0.5.0';
+	const VERSION = '0.5.1';
 
 	/**
 	 * Class constructor

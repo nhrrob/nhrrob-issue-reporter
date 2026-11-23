@@ -221,7 +221,7 @@ class Store {
 		$user = get_userdata( (int) $post->post_author );
 		$shot = $meta['shot'] ? wp_get_attachment_url( $meta['shot'] ) : false;
 
-		return [
+		$row = [
 			'id'       => (int) $post->ID,
 			'text'     => $post->post_content,
 			'who'      => $user ? $user->display_name : '',
@@ -239,6 +239,15 @@ class Store {
 			] : null,
 			'issue'    => $meta['issue'],
 		];
+
+		/**
+		 * One piece of feedback as the Inbox shows it. Another plugin can fill
+		 * `who` for feedback sent without a WordPress account.
+		 *
+		 * @param array    $row  The row.
+		 * @param \WP_Post $post The feedback post.
+		 */
+		return (array) apply_filters( 'nhrrob_issue_reporter_feedback_row', $row, $post );
 	}
 
 	/**

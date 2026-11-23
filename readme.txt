@@ -4,7 +4,7 @@ Tags: feedback, bug report, uat, client feedback, github
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,8 @@ Each runs the same code as the form, as the person who is logged in. For a plugi
 - `nhrrob_issue_reporter_sent` and `nhrrob_issue_reporter_feedback_created`: after a report is opened, and after feedback arrives.
 - `nhrrob_issue_reporter_state` and `nhrrob_issue_reporter_enqueue`, with the `nhrrobIssueReporter.app` JavaScript filter: add screens to the app.
 - `nhrrob_issue_reporter_client_id`: use your own GitHub OAuth App for Connect GitHub.
+- `nhrrob_issue_reporter_can_send`: let more people use the feedback widget.
+- `nhrrob_issue_reporter_feedback_row`: change a piece of feedback as the Inbox shows it.
 
 == Installation ==
 1. Install the plugin from Plugins → Add New, or upload the zip, and activate it.
@@ -99,6 +101,8 @@ Yes, when its repository is on GitHub and your connection may open issues there.
 = What does "Connect GitHub" have access to? =
 Your public repositories, or also your private ones if you tick that box. A token you create yourself can be limited to chosen repositories and the one permission the plugin needs.
 
+GitHub's approval page names the app "NHR Issue Reporter" by nhrrob. Approve it only right after clicking Connect GitHub on your own site: anyone can show that page, so a link to it from somewhere else is not this plugin.
+
 = Where is the token stored? =
 In `wp-config.php` if you define `NHRROB_ISSUE_REPORTER_TOKEN` there, which is the safer place. Otherwise in the database, in an option that is not autoloaded. It is never printed in a page or sent anywhere but api.github.com.
 
@@ -122,6 +126,10 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 7. The dark theme.
 
 == Changelog ==
+
+= 0.5.1 =
+* Better: the Connect GitHub screen and the FAQ say what GitHub's approval page shows, so it can be told apart from a copy.
+* Developers: the nhrrob_issue_reporter_can_send and nhrrob_issue_reporter_feedback_row filters.
 
 = 0.5.0 =
 * New: the feedback widget. A "Report an issue" item in the admin bar on the site and in the dashboard, and a floating Feedback button on the site, for the roles you choose.
