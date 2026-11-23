@@ -56,23 +56,28 @@ The "Aurora" redesign (#15), light and dark, from the mockups in `docs/design/` 
 
 Drawn on the canvas (`docs/design/AuroraWidget.dc.html`, `AuroraInbox.dc.html`), not built:
 
+- **A Report button on every page, front and admin** for chosen roles: floating on the site, and in the admin bar on every wp-admin screen (as Marker.io's plugin does) (#25).
 - **A feedback widget on the site** for chosen roles: mark a spot (box, arrow, draw, text, blur), describe it, pick bug, change or question. Page, browser, screen size and console errors are added.
 - **An Inbox in wp-admin** where that feedback waits; the admin sends it to GitHub, replies or closes it. Nothing reaches GitHub without the admin acting.
 - **Type and severity** as GitHub labels.
+- **Connect GitHub** with one button (GitHub's device flow, no server of ours), and a pre-filled link for making a token (#24).
+- **The listing repositioned** as client feedback and UAT once the widget ships (#26).
+
+The direction (2026-11-23): a UAT and client-feedback tool that agencies, including big ones, can use; GitHub is one destination. Full feature list, competitor table and positioning: nhrrob/nhrrob-issue-reporter-pro `docs/features.md` and `docs/positioning.md`.
 
 These change three rules in `CLAUDE.md` (nothing on the front end; only admins; the person acting is the one sending), so each gets a row in `docs/DECISIONS.md` when it is built.
 
 ## Left out on purpose
 
 - Assignees. (Labels for type and severity are planned above; templates move with them.)
-- Trackers other than GitHub (a Pro candidate).
+- Trackers other than GitHub: Pro (Jira, Teamwork, Linear and others).
 - Reporting on WordPress itself.
 - A "Report issue" link on Appearance → Themes: that screen is drawn by JavaScript and has no filter for its links. Themes are reported from the form.
-- A network-wide screen on multisite; each site has its own settings and list.
+- A network-wide screen on multisite; each site has its own settings and list. Pro plans multisite and an agency hub.
 
 ## Free and Pro
 
-The market check and the Pro plan are in [nhrrob/nhrrob-issue-reporter-pro](https://github.com/nhrrob/nhrrob-issue-reporter-pro) (`docs/market.md`, `docs/PRD.md`), from #17 and #18. In short: the widget, annotation, console capture, Inbox, labels and templates, and "Sign in with GitHub" are free in other plugins or needed for WordPress.org, so they are free here. Pro candidates, for the owner to confirm: guest reviewers without an account, more trackers (Jira, Linear, GitLab, Trello) with status sync, and PHP errors turned into reports.
+The market check and the Pro plan are in [nhrrob/nhrrob-issue-reporter-pro](https://github.com/nhrrob/nhrrob-issue-reporter-pro) (`docs/market.md`, `docs/PRD.md`), from #17 and #18. In short: the widget, annotation, console capture, Inbox, labels and templates, and "Sign in with GitHub" are free in other plugins or needed for WordPress.org, so they are free here. Pro candidates, for the owner to confirm: guest reviewers without an account, more trackers (Jira, Teamwork, Linear, Asana, ClickUp, Trello, GitLab) with status sync, multisite and an agency hub for many client sites, agency controls, and PHP errors turned into reports. No SaaS: trackers take API tokens from the site's own server.
 
 ## Before this can be public (done 2026-11-23)
 
