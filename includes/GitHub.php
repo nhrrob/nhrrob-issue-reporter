@@ -116,13 +116,23 @@ class GitHub {
 	/**
 	 * Open an issue.
 	 *
-	 * @param string $repo  Repository, "owner/name".
-	 * @param string $title Title.
-	 * @param string $body  Body, in Markdown.
+	 * @param string   $repo   Repository, "owner/name".
+	 * @param string   $title  Title.
+	 * @param string   $body   Body, in Markdown.
+	 * @param string[] $labels Labels; GitHub leaves them out when the token cannot set them.
 	 * @return array|\WP_Error The new issue's `number` and `url`.
 	 */
-	public static function create( $repo, $title, $body ) {
-		$data = self::request( 'POST', '/repos/' . $repo . '/issues', [ 'title' => $title, 'body' => $body ] ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound -- two short pairs.
+	public static function create( $repo, $title, $body, array $labels = [] ) {
+		$fields = [
+			'title' => $title,
+			'body'  => $body,
+		];
+
+		if ( $labels ) {
+			$fields['labels'] = array_values( $labels );
+		}
+
+		$data = self::request( 'POST', '/repos/' . $repo . '/issues', $fields );
 
 		if ( is_wp_error( $data ) ) {
 			return $data;

@@ -42,26 +42,25 @@ class Reports {
 	 * @param string $repo   Repository, "owner/name".
 	 * @param array  $issue  The issue's `number` and `url`.
 	 * @param string $title  Title.
-	 * @return void
+	 * @return array The new row.
 	 */
 	public static function add( $plugin, $repo, array $issue, $title ) {
 		$rows = self::all();
+		$row  = [
+			'plugin'  => (string) $plugin,
+			'repo'    => (string) $repo,
+			'number'  => (int) $issue['number'],
+			'url'     => (string) $issue['url'],
+			'title'   => (string) $title,
+			'time'    => time(),
+			'state'   => 'open',
+			'checked' => time(),
+		];
 
-		array_unshift(
-			$rows,
-			[
-				'plugin'  => (string) $plugin,
-				'repo'    => (string) $repo,
-				'number'  => (int) $issue['number'],
-				'url'     => (string) $issue['url'],
-				'title'   => (string) $title,
-				'time'    => time(),
-				'state'   => 'open',
-				'checked' => time(),
-			]
-		);
-
+		array_unshift( $rows, $row );
 		update_option( self::OPTION, array_slice( $rows, 0, self::MAX ), false );
+
+		return $row;
 	}
 
 	/**

@@ -120,4 +120,74 @@ class RestTest extends TestCase {
 	public function testANonScalarIsEmpty() {
 		$this->assertSame( '', Rest::text( [ 'x' ] ) );
 	}
+
+	public function testAPluginWithoutARepositorySaysWhatToDo() {
+		$this->site();
+		WP_Mock::userFunction( 'wp_remote_request' )->never();
+
+		$error = ( new Rest() )->similar( $this->request( [ 'plugin' => 'q/q.php', 'title' => 'Broken' ] ) );
+
+		$this->assertInstanceOf( \WP_Error::class, $error );
+		$this->assertStringContainsString( 'Q does not name its GitHub repository', $error->get_error_message() );
+	}
+
+	public function testAPluginWithoutARepositoryCanBeGivenOneThatIsCheckedAndSaved() {
+		$this->site();
+		$urls  = [];
+		$saved = null;
+		WP_Mock::userFunction( 'wp_remote_retrieve_response_code' )->andReturn( 200 );
+		WP_Mock::userFunction( 'wp_remote_retrieve_body' )->andReturn( '{"html_url":"https://github.com/me/q/issues/7#c","full_name":"me/q"}' );
+		WP_Mock::userFunction( 'wp_remote_request' )->twice()->andReturnUsing(
+			function ( $url ) use ( &$urls ) {
+				$urls[] = $url;
+				return [];
+			}
+		);
+		WP_Mock::userFunction( 'update_option' )->andReturnUsing(
+			function ( $option, $value ) use ( &$saved ) {
+				$saved = [ $option, $value ];
+				return true;
+			}
+		);
+
+		( new Rest() )->comment( $this->request( [ 'plugin' => 'q/q.php', 'repo' => 'https://github.com/me/q', 'number' => 7, 'body' => 'x' ] ) );
+
+		$this->assertSame( [ 'https://api.github.com/repos/me/q', 'https://api.github.com/repos/me/q/issues/7/comments' ], $urls );
+		$this->assertSame( 'nhrrob_issue_reporter_settings', $saved[0] );
+		$this->assertSame( [ 'q/q.php' => 'me/q' ], $saved[1]['repos'] );
+	}
+
+	public function testAnUnsavedOtherRepositoryIsNotATarget() {
+		$this->site();
+		WP_Mock::userFunction( 'wp_remote_request' )->never();
+
+		$error = ( new Rest() )->similar( $this->request( [ 'plugin' => 'repo:me/else', 'title' => 'Broken' ] ) );
+
+		$this->assertStringContainsString( 'me/else is not one of the other repositories', $error->get_error_message() );
+	}
+
+	public function testLabelsAreShortLinesEachOnceAtMostTen() {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturnUsing( 'trim' );
+
+		$this->assertSame( [ 'bug', 'severity: major' ], Rest::labels( [ 'bug', ' bug ', 'severity: major', '', [ 'x' ] ] ) );
+		$this->assertSame( 50, mb_strlen( Rest::labels( [ str_repeat( 'é', 80 ) ] )[0] ) );
+		$this->assertCount( 10, Rest::labels( range( 1, 20 ) ) );
+		$this->assertSame( [], Rest::labels( 'bug' ) );
+	}
+
+	public function testANewIssueCarriesItsLabels() {
+		$this->site();
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturnUsing( 'trim' );
+		WP_Mock::userFunction( 'update_option' )->andReturn( true );
+		WP_Mock::userFunction( 'wp_remote_retrieve_response_code' )->andReturn( 201 );
+		WP_Mock::userFunction( 'wp_remote_retrieve_body' )->andReturn( '{"number":3,"html_url":"https://github.com/me/p/issues/3"}' );
+		WP_Mock::userFunction( 'wp_remote_request' )->once()->andReturnUsing(
+			function ( $url, $args ) {
+				$this->assertSame( [ 'bug', 'severity: minor' ], json_decode( $args['body'], true )['labels'] );
+				return [];
+			}
+		);
+
+		( new Rest() )->send( $this->request( [ 'plugin' => 'p/p.php', 'title' => 'T', 'what' => 'W', 'labels' => [ 'bug', 'severity: minor' ] ] ) );
+	}
 }

@@ -119,14 +119,42 @@ class Rest {
 			$list[] = [ 'file' => $file ] + $plugin;
 		}
 
-		return [
+		$state = [
 			'plugins'       => $list,
 			'publicSite'    => Screenshots::site_is_public(),
 			'hasToken'      => '' !== Settings::token(),
 			'tokenInConfig' => Settings::token_is_constant(),
 			'environment'   => Environment::text( $plugins ),
 			'reports'       => Reports::all(),
+			'widget'        => Settings::get()['widget'],
+			'roles'         => self::roles(),
+			'inbox'         => Feedback\Store::waiting(),
 		];
+
+		/**
+		 * What the app gets when it opens. Another plugin may add its own keys.
+		 *
+		 * @param array $state State.
+		 */
+		return (array) apply_filters( 'nhrrob_issue_reporter_state', $state );
+	}
+
+	/**
+	 * The site's roles, for choosing who sees the feedback widget.
+	 *
+	 * @return array Rows of `slug` and `name`.
+	 */
+	public static function roles() {
+		$roles = [];
+
+		foreach ( wp_roles()->get_names() as $slug => $name ) {
+			$roles[] = [
+				'slug' => (string) $slug,
+				'name' => translate_user_role( $name ),
+			];
+		}
+
+		return $roles;
 	}
 
 	/**
@@ -148,10 +176,15 @@ class Rest {
 
 		$settings = Settings::get();
 		$targets  = Repos::all();
-		$known    = array_unique( array_column( $targets, 'repo' ) );
-		$new      = [];
-		$repos    = $request->get_param( 'repos' );
-		$extra    = $request->get_param( 'extra' );
+
+		if ( is_array( $request->get_param( 'widget' ) ) ) {
+			$settings['widget'] = Settings::widget( $request->get_param( 'widget' ) );
+		}
+
+		$known = array_unique( array_column( $targets, 'repo' ) );
+		$new   = [];
+		$repos = $request->get_param( 'repos' );
+		$extra = $request->get_param( 'extra' );
 
 		if ( is_array( $repos ) ) {
 			$settings['repos'] = [];
@@ -236,7 +269,7 @@ class Rest {
 	 * @return array|\WP_Error `issues`: rows of `number`, `title` and `url`.
 	 */
 	public function similar( $request ) {
-		$plugin = $this->plugin( $request->get_param( 'plugin' ) );
+		$plugin = Repos::resolve( $request->get_param( 'plugin' ), $request->get_param( 'repo' ) );
 
 		if ( is_wp_error( $plugin ) ) {
 			return $plugin;
@@ -266,7 +299,7 @@ class Rest {
 	 * @return array|\WP_Error `report` (the new row) and `reports`.
 	 */
 	public function send( $request ) {
-		$plugin = $this->plugin( $request->get_param( 'plugin' ) );
+		$plugin = Repos::resolve( $request->get_param( 'plugin' ), $request->get_param( 'repo' ) );
 
 		if ( is_wp_error( $plugin ) ) {
 			return $plugin;
@@ -285,24 +318,69 @@ class Rest {
 			return $images;
 		}
 
-		$issue = GitHub::create(
-			$plugin['repo'],
-			$title,
-			GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images )
-		);
+		$labels = self::labels( $request->get_param( 'labels' ) );
+		$body   = GitHub::body( $what, self::text( $request->get_param( 'steps' ) ), self::text( $request->get_param( 'environment' ) ), $images );
+
+		/**
+		 * Send a report somewhere else than GitHub. Return the new issue's
+		 * `number` and `url`, or a WP_Error; null lets GitHub have it.
+		 *
+		 * @param array|\WP_Error|null $issue  Null.
+		 * @param array                $target The target, as Repos::all() returns it.
+		 * @param string               $title  Title.
+		 * @param string               $body   Body, in Markdown.
+		 * @param string[]             $labels Labels.
+		 */
+		$issue = apply_filters( 'nhrrob_issue_reporter_pre_send', null, $plugin, $title, $body, $labels );
+
+		if ( null === $issue ) {
+			$issue = GitHub::create( $plugin['repo'], $title, $body, $labels );
+		}
 
 		if ( is_wp_error( $issue ) ) {
 			return $this->refused( $issue );
 		}
 
-		Reports::add( $plugin['name'], $plugin['repo'], $issue, $title );
+		if ( ! is_array( $issue ) || ! isset( $issue['number'], $issue['url'] ) ) {
+			return new \WP_Error( 'nhrrob_issue_reporter_not_sent', __( 'The report was not sent. Please try again.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
+		}
 
-		$reports = Reports::all();
+		$report = Reports::add( $plugin['name'], $plugin['repo'], $issue, $title );
+
+		/**
+		 * After a report was opened. The Inbox marks its feedback as sent here.
+		 *
+		 * @param array            $report  The new row of the Sent list.
+		 * @param \WP_REST_Request $request The request.
+		 */
+		do_action( 'nhrrob_issue_reporter_sent', $report, $request );
 
 		return [
-			'report'  => $reports[0],
-			'reports' => $reports,
+			'report'  => $report,
+			'reports' => Reports::all(),
 		];
+	}
+
+	/**
+	 * Labels for a new issue: at most ten, each one line of at most 50 characters.
+	 * A label the repository does not have is created by GitHub, or left out
+	 * when the token cannot create labels there.
+	 *
+	 * @param mixed $value Raw list.
+	 * @return string[]
+	 */
+	public static function labels( $value ) {
+		$labels = [];
+
+		foreach ( is_array( $value ) ? $value : [] as $label ) {
+			$label = mb_substr( sanitize_text_field( is_scalar( $label ) ? (string) $label : '' ), 0, 50 );
+
+			if ( '' !== $label ) {
+				$labels[] = $label;
+			}
+		}
+
+		return array_slice( array_values( array_unique( $labels ) ), 0, 10 );
 	}
 
 	/**
@@ -348,7 +426,7 @@ class Rest {
 	 * @return array|\WP_Error `url` of the comment and `reports`.
 	 */
 	public function comment( $request ) {
-		$plugin = $this->plugin( $request->get_param( 'plugin' ) );
+		$plugin = Repos::resolve( $request->get_param( 'plugin' ), $request->get_param( 'repo' ) );
 
 		if ( is_wp_error( $plugin ) ) {
 			return $plugin;
@@ -411,22 +489,6 @@ class Rest {
 	 */
 	public static function line( $value ) {
 		return trim( (string) preg_replace( '/\s+/u', ' ', self::text( $value, 200 ) ) );
-	}
-
-	/**
-	 * The plugin, theme or repository a request names, when its repository is known.
-	 *
-	 * @param mixed $file Key from Repos::all(), such as a plugin file.
-	 * @return array|\WP_Error One target, as Repos::all() returns it.
-	 */
-	private function plugin( $file ) {
-		$plugins = Repos::all();
-
-		if ( ! is_string( $file ) || ! isset( $plugins[ $file ] ) || '' === $plugins[ $file ]['repo'] ) {
-			return new \WP_Error( 'nhrrob_issue_reporter_no_repo', __( 'Choose a plugin that has a repository.', 'nhrrob-issue-reporter' ), [ 'status' => 400 ] );
-		}
-
-		return $plugins[ $file ];
 	}
 
 	/**

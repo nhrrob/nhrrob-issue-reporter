@@ -61,9 +61,38 @@ class Settings {
 		}
 
 		return [
-			'repos' => $repos,
-			'extra' => array_values( $extra ),
+			'repos'  => $repos,
+			'extra'  => array_values( $extra ),
+			'widget' => self::widget( isset( $input['widget'] ) && is_array( $input['widget'] ) ? $input['widget'] : [] ),
 		];
+	}
+
+	/**
+	 * The feedback widget's settings: off until switched on, for administrators
+	 * and editors, with a floating button on the site's pages.
+	 *
+	 * @param array $input Raw widget settings.
+	 * @return array `enabled`, `roles` (role slugs), `button`.
+	 */
+	public static function widget( array $input ) {
+		$roles = isset( $input['roles'] ) && is_array( $input['roles'] ) ? $input['roles'] : [ 'administrator', 'editor' ];
+
+		return [
+			'enabled' => ! empty( $input['enabled'] ),
+			'roles'   => array_values( array_unique( array_filter( array_map( [ self::class, 'role' ], $roles ) ) ) ),
+			'button'  => ! isset( $input['button'] ) || ! empty( $input['button'] ),
+		];
+	}
+
+	/**
+	 * A role slug as sanitize_key() would make it: lowercase letters, digits,
+	 * dashes and underscores.
+	 *
+	 * @param mixed $role Raw slug.
+	 * @return string
+	 */
+	public static function role( $role ) {
+		return is_string( $role ) ? (string) preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $role ) ) : '';
 	}
 
 	/**

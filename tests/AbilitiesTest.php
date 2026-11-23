@@ -60,7 +60,7 @@ class AbilitiesTest extends TestCase {
 		$input = $this->definitions()['nhrrob-issue-reporter/comment-on-issue']['input_schema'];
 
 		$this->assertSame( [ 'plugin', 'number', 'body' ], $input['required'] );
-		$this->assertSame( [ 'plugin', 'number', 'body', 'screenshots', 'allowSiteAddress' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'plugin', 'number', 'body', 'screenshots', 'allowSiteAddress', 'repo' ], array_keys( $input['properties'] ) );
 		$this->assertFalse( $input['additionalProperties'] );
 	}
 
@@ -75,15 +75,16 @@ class AbilitiesTest extends TestCase {
 	public function testAReportTakesTheFieldsOfTheFormOnly() {
 		$input = $this->definitions()['nhrrob-issue-reporter/report-issue']['input_schema'];
 
-		$this->assertSame( [ 'plugin', 'title', 'what', 'steps', 'environment', 'screenshots', 'allowSiteAddress' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'plugin', 'title', 'what', 'steps', 'environment', 'labels', 'screenshots', 'allowSiteAddress', 'repo' ], array_keys( $input['properties'] ) );
 		$this->assertSame( [ 'plugin', 'title', 'what' ], $input['required'] );
 		$this->assertFalse( $input['additionalProperties'] );
 	}
 
-	public function testTheStateCanBeNarrowedToOneRepositoryButNeedsNothing() {
+	public function testTheStateCanBeNarrowedButNeedsNothing() {
 		$input = $this->definitions()['nhrrob-issue-reporter/get-state']['input_schema'];
 
-		$this->assertSame( [ 'repo' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'repo', 'state', 'search' ], array_keys( $input['properties'] ) );
+		$this->assertSame( [ 'open', 'closed' ], $input['properties']['state']['enum'] );
 		$this->assertArrayNotHasKey( 'required', $input );
 		$this->assertSame( [], $input['default'] );
 	}
@@ -93,5 +94,38 @@ class AbilitiesTest extends TestCase {
 
 		$this->assertSame( [ 'plugin', 'title' ], $input['required'] );
 		$this->assertFalse( $input['additionalProperties'] );
+	}
+
+	public function testSentReportsAreNarrowedByRepositoryStateAndSearch() {
+		WP_Mock::userFunction( 'wp_list_filter' )->andReturnUsing(
+			function ( $rows, $args ) {
+				return array_filter(
+					$rows,
+					function ( $row ) use ( $args ) {
+						return ! array_diff_assoc( $args, $row );
+					}
+				);
+			}
+		);
+
+		$reports = [
+			[ 'repo' => 'me/a', 'number' => 12, 'title' => 'Login button broken', 'state' => 'open' ],
+			[ 'repo' => 'me/a', 'number' => 3, 'title' => 'Typo on the cart', 'state' => 'closed' ],
+			[ 'repo' => 'me/b', 'number' => 12, 'title' => 'Slow search', 'state' => 'open' ],
+		];
+		$numbers = function ( $rows ) {
+			return array_map(
+				function ( $row ) {
+					return $row['repo'] . '#' . $row['number'];
+				},
+				$rows
+			);
+		};
+
+		$this->assertSame( [ 'me/a#12', 'me/b#12' ], $numbers( Abilities::filter_reports( $reports, [ 'state' => 'open' ] ) ) );
+		$this->assertSame( [ 'me/a#3' ], $numbers( Abilities::filter_reports( $reports, [ 'search' => 'CART' ] ) ) );
+		$this->assertSame( [ 'me/a#12', 'me/b#12' ], $numbers( Abilities::filter_reports( $reports, [ 'search' => '#12' ] ) ) );
+		$this->assertSame( [ 'me/a#12' ], $numbers( Abilities::filter_reports( $reports, [ 'repo' => 'https://github.com/me/a', 'search' => '12' ] ) ) );
+		$this->assertCount( 3, Abilities::filter_reports( $reports, [ 'state' => 'merged' ] ) );
 	}
 }

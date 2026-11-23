@@ -137,5 +137,14 @@ class Admin {
 			wp_enqueue_style( $handle, $url . '/style-index.css', [], (string) filemtime( $dir . '/style-index.css' ) );
 			wp_style_add_data( $handle, 'rtl', 'replace' );
 		}
+
+		/**
+		 * After the app's script was enqueued. Another plugin enqueues its own
+		 * script here, depending on this handle, and adds screens through the
+		 * `nhrrobIssueReporter.app` JavaScript filter.
+		 *
+		 * @param string $handle The app's script handle.
+		 */
+		do_action( 'nhrrob_issue_reporter_enqueue', $handle );
 	}
 }

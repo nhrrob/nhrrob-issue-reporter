@@ -6,6 +6,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import api from '../api';
+import ConnectGitHub, { tokenLink } from '../components/ConnectGitHub';
 import { GROUPS, TYPE_ICON } from '../components/TargetPicker';
 import { useToast } from '../components/ToastProvider';
 import {
@@ -18,10 +19,11 @@ import {
 	SearchBox,
 	Segmented,
 } from '../components/ui';
+import WidgetSettings from './WidgetSettings';
 
 const P = 'nhrrob-issue-reporter-';
 
-export default function Settings( { data, setData } ) {
+export default function Settings( { boot, data, setData } ) {
 	const toast = useToast();
 	const [ tab, setTab ] = useState( data.hasToken ? 'repos' : 'github' );
 	const [ busy, setBusy ] = useState( false );
@@ -65,6 +67,13 @@ export default function Settings( { data, setData } ) {
 						__( 'Repositories', 'nhrrob-issue-reporter' ),
 						String( set ),
 					],
+					[
+						'widget',
+						__( 'Client widget', 'nhrrob-issue-reporter' ),
+						data.widget.enabled
+							? __( 'On', 'nhrrob-issue-reporter' )
+							: '',
+					],
 				].map( ( [ id, label, badge ] ) => (
 					<button
 						key={ id }
@@ -86,16 +95,26 @@ export default function Settings( { data, setData } ) {
 				) ) }
 			</div>
 
-			{ tab === 'github' ? (
-				<Connection data={ data } busy={ busy } save={ save } />
-			) : (
+			{ tab === 'github' && (
+				<Connection
+					boot={ boot }
+					data={ data }
+					setData={ setData }
+					busy={ busy }
+					save={ save }
+				/>
+			) }
+			{ tab === 'repos' && (
 				<Repositories data={ data } busy={ busy } save={ save } />
+			) }
+			{ tab === 'widget' && (
+				<WidgetSettings data={ data } busy={ busy } save={ save } />
 			) }
 		</>
 	);
 }
 
-function Connection( { data, busy, save } ) {
+function Connection( { boot, data, setData, busy, save } ) {
 	const [ token, setToken ] = useState( '' );
 	const someRepo = data.plugins.some( ( p ) => p.repo );
 
@@ -116,19 +135,18 @@ function Connection( { data, busy, save } ) {
 		{
 			done: data.hasToken,
 			title: __(
-				'Make a fine-grained token on GitHub',
+				'Connect GitHub, or make a token',
 				'nhrrob-issue-reporter'
 			),
 			note: __(
-				'Choose only the repositories you report to, with one permission: “Issues: Read and write”.',
+				'“Connect GitHub” is one click and a code. A token can be limited to the repositories you choose, with one permission: “Issues: Read and write”.',
 				'nhrrob-issue-reporter'
 			),
-			link: 'https://github.com/settings/personal-access-tokens/new',
 		},
 		{
 			done: data.hasToken,
 			title: __(
-				'Add it to wp-config.php, or paste it here',
+				'With a token: paste it here, or add it to wp-config.php',
 				'nhrrob-issue-reporter'
 			),
 			note: __(
@@ -192,19 +210,7 @@ function Connection( { data, busy, save } ) {
 								) }
 							</span>
 							<span className={ P + 'checklist__text' }>
-								<strong>
-									{ s.link ? (
-										<a
-											href={ s.link }
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											{ s.title }
-										</a>
-									) : (
-										s.title
-									) }
-								</strong>
+								<strong>{ s.title }</strong>
 								<span>{ s.note }</span>
 							</span>
 						</li>
@@ -228,76 +234,134 @@ function Connection( { data, busy, save } ) {
 							</p>
 						</>
 					) : (
-						<form
-							autoComplete="off"
-							onSubmit={ ( event ) => {
-								event.preventDefault();
-								save(
-									{ token },
-									__( 'Token saved', 'nhrrob-issue-reporter' )
-								).then( ( ok ) => ok && setToken( '' ) );
-							} }
-						>
-							<Field
-								id={ P + 'token' }
-								label={ __( 'Token', 'nhrrob-issue-reporter' ) }
-								help={ __(
-									'Kept on this server and sent to api.github.com only. It never appears on a page again.',
-									'nhrrob-issue-reporter'
-								) }
+						<>
+							{ ! data.hasToken && (
+								<ConnectGitHub setData={ setData } />
+							) }
+							<form
+								autoComplete="off"
+								onSubmit={ ( event ) => {
+									event.preventDefault();
+									save(
+										{ token },
+										__(
+											'Token saved',
+											'nhrrob-issue-reporter'
+										)
+									).then( ( ok ) => ok && setToken( '' ) );
+								} }
 							>
-								<input
-									id={ P + 'token' }
-									className={ P + 'input is-mono' }
-									type="password"
-									autoComplete="new-password"
-									value={ token }
-									placeholder={
-										data.hasToken
+								<div className={ P + 'tokenhow' }>
+									<strong>
+										{ data.hasToken
 											? __(
-													'A token is saved. Type a new one to replace it.',
+													'Replace the token',
 													'nhrrob-issue-reporter'
 											  )
-											: 'github_pat_…'
-									}
-									onChange={ ( e ) =>
-										setToken( e.target.value )
-									}
-								/>
-							</Field>
-							<div className={ P + 'tokenbox__actions' }>
-								<Button
-									variant="primary"
-									type="submit"
-									disabled={ busy || ! token.trim() }
-								>
-									{ __(
-										'Save token',
-										'nhrrob-issue-reporter'
-									) }
-								</Button>
-								{ data.hasToken && (
-									<Button
-										variant="danger"
-										disabled={ busy }
-										onClick={ () =>
-											save(
-												{ removeToken: true },
-												__(
-													'Token removed',
+											: __(
+													'Or use a token',
 													'nhrrob-issue-reporter'
-												)
-											)
+											  ) }
+									</strong>
+									<ol>
+										<li>
+											{ __(
+												'Open GitHub’s token form: the name, a year and “Issues: Read and write” are filled in.',
+												'nhrrob-issue-reporter'
+											) }
+										</li>
+										<li>
+											{ __(
+												'Under “Repository access”, choose the repositories you report to, then “Generate token”.',
+												'nhrrob-issue-reporter'
+											) }
+										</li>
+										<li>
+											{ __(
+												'Copy the token and paste it below.',
+												'nhrrob-issue-reporter'
+											) }
+										</li>
+									</ol>
+									<a
+										className={
+											P + 'btn ' + P + 'btn--secondary'
 										}
+										href={ tokenLink( boot.siteName ) }
+										target="_blank"
+										rel="noopener noreferrer"
 									>
 										{ __(
-											'Remove token',
+											'Create a token on GitHub',
+											'nhrrob-issue-reporter'
+										) }
+										<Icon name="external" size={ 14 } />
+									</a>
+								</div>
+								<Field
+									id={ P + 'token' }
+									label={ __(
+										'Token',
+										'nhrrob-issue-reporter'
+									) }
+									help={ __(
+										'Kept on this server and sent to api.github.com only. It never appears on a page again.',
+										'nhrrob-issue-reporter'
+									) }
+								>
+									<input
+										id={ P + 'token' }
+										className={ P + 'input is-mono' }
+										type="password"
+										autoComplete="new-password"
+										value={ token }
+										placeholder={
+											data.hasToken
+												? __(
+														'A token is saved. Type a new one to replace it.',
+														'nhrrob-issue-reporter'
+												  )
+												: 'github_pat_…'
+										}
+										onChange={ ( e ) =>
+											setToken( e.target.value )
+										}
+									/>
+								</Field>
+								<div className={ P + 'tokenbox__actions' }>
+									<Button
+										variant="primary"
+										type="submit"
+										disabled={ busy || ! token.trim() }
+									>
+										{ __(
+											'Save token',
 											'nhrrob-issue-reporter'
 										) }
 									</Button>
-								) }
-							</div>
-						</form>
+									{ data.hasToken && (
+										<Button
+											variant="danger"
+											disabled={ busy }
+											onClick={ () =>
+												save(
+													{ removeToken: true },
+													__(
+														'Token removed',
+														'nhrrob-issue-reporter'
+													)
+												)
+											}
+										>
+											{ __(
+												'Remove token',
+												'nhrrob-issue-reporter'
+											) }
+										</Button>
+									) }
+								</div>
+							</form>
+						</>
 					) }
 				</div>
 			</div>

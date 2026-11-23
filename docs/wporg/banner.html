@@ -22,6 +22,17 @@
 	.env b { font-weight: 600; }
 	.btn { margin-top: 11px; padding: 7px 0; border-radius: 9px; text-align: center; font-weight: 600; color: #fff;
 		background: linear-gradient(135deg, #5b63f5 0%, #8b5cf6 100%); }
+	.shot { position: relative; height: 74px; border-radius: 9px; background: #f5f6fb; border: 1px solid #e8eaf2; overflow: hidden; }
+	.bar { height: 9px; background: #1d2327; }
+	.ph { height: 6px; margin: 8px 0 0 12px; border-radius: 3px; background: #dfe2ee; }
+	.w60 { width: 60%; } .w40 { width: 40%; }
+	.cta { position: absolute; left: 12px; bottom: 10px; padding: 4px 10px; border-radius: 6px; background: #14162b; color: #fff; font-size: 9px; font-weight: 600; }
+	.mark { position: absolute; left: 6px; bottom: 5px; width: 72px; height: 28px; border: 2.5px solid #ea580c; border-radius: 4px; }
+	.arrow { position: absolute; left: 86px; bottom: 26px; width: 70px; height: 2.5px; background: #ea580c; transform: rotate(-24deg); transform-origin: left; }
+	.said { margin-top: 2px; font-size: 12px; font-weight: 600; }
+	.chips { display: flex; gap: 4px; margin-top: 8px; }
+	.chips span { padding: 1px 7px; border: 1px solid #e8eaf2; border-radius: 99px; font-size: 9.5px; }
+	.chips .err { border-color: transparent; background: #feecec; color: #c8282e; }
 </style></head>
 <body>
 <div class="banner">
@@ -32,18 +43,23 @@
 			<svg viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#fff" fill-opacity=".18"/><g transform="translate(40 38) scale(7.4)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.1V6a3 3 0 116 0v1.1M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 014-4h4a4 4 0 014 4v3c0 3.3-2.7 6-6 6zM12 20v-9M6 13H2M22 13h-4"/></g></svg>
 			NHR Issue Reporter
 		</div>
-		<h1>Report a bug to GitHub without leaving WordPress</h1>
-		<p>Plugins &amp; themes · Versions filled in · Duplicates found first</p>
+		<h1>Client feedback with a marked-up screenshot</h1>
+		<p>Report button · Inbox in WordPress · Sent to GitHub</p>
 	</div>
 	<div class="card">
-		<div class="repo"><span class="dot"></span>acme/booking-plugin · New issue</div>
-		<div class="title">Checkout button does nothing</div>
-		<h3>What happened</h3>
-		<div class="line" style="width:92%"></div>
-		<h3>Environment</h3>
-		<div class="env"><span>WordPress</span><b>7.1</b></div>
-		<div class="env"><span>PHP</span><b>8.4</b></div>
-		<div class="btn">Send to GitHub</div>
+		<div class="shot">
+			<div class="bar"></div>
+			<div class="ph w60"></div>
+			<div class="ph w40"></div>
+			<div class="cta">Book now</div>
+			<div class="mark"></div>
+			<div class="arrow"></div>
+		</div>
+		<h3>What’s wrong?</h3>
+		<div class="said">“Book now” does nothing on my phone.</div>
+		<div class="chips"><span>/book</span><span>Safari · iPhone</span><span class="err">2 errors</span></div>
+		<div class="btn">Send feedback</div>
 	</div>
+</div>
 </div>
 </body></html>
