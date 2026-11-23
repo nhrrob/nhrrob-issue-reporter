@@ -78,5 +78,5 @@ The market check and the Pro plan are in [nhrrob/nhrrob-issue-reporter-pro](http
 
 - "Sign in with GitHub", or very clear token instructions with screenshots. Done as instructions: the checklist on Settings → GitHub and the readme's setup steps.
 - A decision on reporting to repositories the site owner does not control: today any plugin with a GitHub address in its header gets the link. Decided: allowed, see `docs/DECISIONS.md`.
-- WordPress.org assets, Plugin Check on a production copy, the deploy workflows my other plugins have. Done: `.wordpress-org/`, `plugin-check.yml`, the deploy step in `release.yml`.
+- WordPress.org assets, Plugin Check on a production copy, the deploy workflows my other plugins have. Done: `.wordpress-org/`, `plugin-check.yml`, the deploy workflows on a new tag and on `trunk`.
 - Translations template. Not needed: WordPress.org builds the language packs from the code, the script's strings included.
