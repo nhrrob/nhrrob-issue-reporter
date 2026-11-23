@@ -24,6 +24,7 @@ function remember( key, value ) {
  * @param {string}   root0.active     The open section.
  * @param {Function} root0.onNavigate Called with a section id.
  * @param {string}   root0.title      The app's name.
+ * @param {string}   root0.site       The site's name, under the app's name.
  * @param {Object}   root0.connection { ok, line } for the card at the bottom.
  * @param {Object}   root0.children   The open screen.
  * @return {Object} Shell element.
@@ -33,6 +34,7 @@ export default function AppShell( {
 	active,
 	onNavigate,
 	title,
+	site,
 	connection,
 	children,
 } ) {
@@ -72,9 +74,7 @@ export default function AppShell( {
 					</span>
 					<span className={ P + 'brand__text' }>
 						<strong>{ title }</strong>
-						<span>
-							{ __( 'This site', 'nhrrob-issue-reporter' ) }
-						</span>
+						{ site && <span title={ site }>{ site }</span> }
 					</span>
 				</div>
 

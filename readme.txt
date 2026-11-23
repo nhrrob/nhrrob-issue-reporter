@@ -4,7 +4,7 @@ Tags: github, bug report, issue tracker, feedback, developer
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,9 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 6. The dark theme.
 
 == Changelog ==
+
+= 0.4.1 =
+* The site's name is shown under Report Issue in the sidebar.
 
 = 0.4.0 =
 * New design, light and dark: a sidebar with the sections and the GitHub connection, numbered steps in the form, cards and filters.

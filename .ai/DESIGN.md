@@ -34,7 +34,7 @@ The name shown in the UI is **Report Issue**. "NHR" never appears.
 
 ## 4. Screens
 
-- **Shell:** sidebar with the brand, groups "Reports" (New report, Sent with the open count) and "Setup" (Settings), and the GitHub connection card at the bottom; top bar with a breadcrumb and the theme switch.
+- **Shell:** sidebar with the brand (the site's name under it), groups "Reports" (New report, Sent with the open count) and "Setup" (Settings), and the GitHub connection card at the bottom; top bar with a breadcrumb and the theme switch.
 - **New report:** four numbered steps (Where it goes, What happened, Screenshots, Environment) and a footer saying where it goes, with Clear and Send (⌘/Ctrl+Enter). Right column: Live preview, Possible duplicates with "Comment instead". The typed text is a draft in `localStorage` (`nhrrob-issue-reporter-draft`) until sent or cleared.
 - **Sent:** four stats, a toolbar (state, plugin, search, sort; kept in the address as `ir_state`, `ir_repo`, `ir_q`, `ir_sort`), rows with a state tile and pill, Comment opening a box under its row.
 - **Settings:** tabs. GitHub: connection card, three-step checklist, token form (or a note when it is in `wp-config.php`). Repositories: filters (has a repository, not set, set here, all), search, groups, a field per row saved on blur; other repositories below.
