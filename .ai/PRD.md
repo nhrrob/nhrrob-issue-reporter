@@ -7,7 +7,7 @@ I run my own plugins on my own sites. When one misbehaves I notice it in the das
 ## Who it is for
 
 - **Now:** me, on my own sites, reporting on my own plugins.
-- **Next (decided 2026-11-23):** agencies and freelancers running UAT on client sites. The client marks the spot on the page, the developer gets a clean issue: the Marker.io and BugHerd job, self-hosted, straight to GitHub, without a monthly fee. The widget, annotation and an Inbox go into this free plugin (they are free elsewhere).
+- **Since 0.5.0:** agencies and freelancers running UAT on client sites. The client marks the spot on the page, the developer gets a clean issue: the Marker.io and BugHerd job, self-hosted, straight to GitHub, without a monthly fee. The widget, annotation and an Inbox go into this free plugin (they are free elsewhere).
 
 ## What 0.1 does
 
@@ -52,24 +52,26 @@ The "Aurora" redesign (#15), light and dark, from the mockups in `docs/design/` 
 - Sent: totals, filters by state and plugin, search, sort, kept in the page address (#16).
 - Settings: a GitHub tab with the setup steps, and a Repositories tab with search and filters (#16).
 
-## Planned for the free plugin (UAT)
+## Added in 0.5.0 (client feedback and UAT)
 
-Drawn on the canvas (`docs/design/AuroraWidget.dc.html`, `AuroraInbox.dc.html`), not built:
+The direction (2026-11-23): a UAT and client-feedback tool that agencies, including big ones, can use; GitHub is one destination. Built from the mockups in `docs/design/` (`AuroraWidget.dc.html`, `AuroraInbox.dc.html`, the Client widget tab of `AuroraSettings.dc.html`):
 
-- **A Report button on every page, front and admin** for chosen roles: floating on the site, and in the admin bar on every wp-admin screen (as Marker.io's plugin does) (#25).
-- **A feedback widget on the site** for chosen roles: mark a spot (box, arrow, draw, text, blur), describe it, pick bug, change or question. Page, browser, screen size and console errors are added.
-- **An Inbox in wp-admin** where that feedback waits; the admin sends it to GitHub, replies or closes it. Nothing reaches GitHub without the admin acting.
-- **Type and severity** as GitHub labels.
-- **Connect GitHub** with one button (GitHub's device flow, no server of ours), and a pre-filled link for making a token (#24).
-- **The listing repositioned** as client feedback and UAT once the widget ships (#26).
+- **A Report button on every page, front and admin** for chosen roles: an admin-bar item on the site and on every wp-admin screen, and a floating Feedback button on the site (#25). Off until switched on; administrators and editors by default.
+- **The feedback widget**: a screenshot of the view, marked with box, arrow, freehand, text and blur; what is wrong; bug, change or question. Page, browser, window size and console errors are added as chips the reviewer can switch off.
+- **The Inbox** in the app: feedback waits there with its screenshot, details and console errors. Set kind and severity, send it to GitHub (page, screenshot and errors only with a tick), mark it done, delete it. Nothing reaches GitHub without someone who may report acting.
+- **Kind and severity as GitHub labels**, also as `labels` on `report-issue`.
+- **Connect GitHub** by GitHub's device flow (no server of ours), and a link that opens GitHub's token form filled in (#24).
+- **The listing repositioned** as client feedback and UAT (#26).
+- Abilities: `get-state` takes `state` and `search` (#16); a target without a repository can be given one with `repo`, and the error says how (#20).
+- Extension points for another plugin (PHP hooks and the `nhrrobIssueReporter.app` JavaScript filter).
 
-The direction (2026-11-23): a UAT and client-feedback tool that agencies, including big ones, can use; GitHub is one destination.
+These changed three rules in `CLAUDE.md` (nothing on the front end; only admins; the person acting is the one sending); `docs/DECISIONS.md` has a row for each.
 
-These change three rules in `CLAUDE.md` (nothing on the front end; only admins; the person acting is the one sending), so each gets a row in `docs/DECISIONS.md` when it is built.
+Drawn but not built: replying to the reviewer from the Inbox, steps as a reorderable list, Templates, ⌘K search.
 
 ## Left out on purpose
 
-- Assignees. (Labels for type and severity are planned above; templates move with them.)
+- Assignees and issue templates.
 - Trackers other than GitHub.
 - Reporting on WordPress itself.
 - A "Report issue" link on Appearance → Themes: that screen is drawn by JavaScript and has no filter for its links. Themes are reported from the form.

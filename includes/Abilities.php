@@ -89,7 +89,11 @@ class Abilities {
 		};
 		$plugin = [
 			'type'        => 'string',
-			'description' => __( 'The `file` of a plugin, must-use plugin, theme or other repository from get-state, such as "nhrrob-secure/nhrrob-secure.php", "mu:site.php", "theme:twentytwentyfive" or "repo:owner/name".', 'nhrrob-issue-reporter' ),
+			'description' => __( 'The `file` of a plugin, must-use plugin, theme or other repository from get-state, such as "nhrrob-secure/nhrrob-secure.php", "mu:site.php", "theme:twentytwentyfive" or "repo:owner/name". A "repo:" key works only for a repository saved under Settings, as get-state lists it.', 'nhrrob-issue-reporter' ),
+		];
+		$repo   = [
+			'type'        => 'string',
+			'description' => __( 'Optional: the GitHub repository ("owner/name") of a plugin, must-use plugin or theme whose `repo` is empty in get-state. It is checked with GitHub and saved in the settings, as the Repositories tab would.', 'nhrrob-issue-reporter' ),
 		];
 		$title  = [
 			'type'        => 'string',
@@ -117,9 +121,18 @@ class Abilities {
 				'input_schema'        => [
 					'type'                 => 'object',
 					'properties'           => [
-						'repo' => [
+						'repo'   => [
 							'type'        => 'string',
 							'description' => __( 'Only the sent reports to this repository, "owner/name". Leave it out for all.', 'nhrrob-issue-reporter' ),
+						],
+						'state'  => [
+							'type'        => 'string',
+							'enum'        => [ 'open', 'closed' ],
+							'description' => __( 'Only the sent reports in this state, as last checked. Leave it out for all.', 'nhrrob-issue-reporter' ),
+						],
+						'search' => [
+							'type'        => 'string',
+							'description' => __( 'Only the sent reports whose title contains this text, or whose issue number it is ("12" or "#12").', 'nhrrob-issue-reporter' ),
 						],
 					],
 					'additionalProperties' => false,
@@ -140,6 +153,7 @@ class Abilities {
 					'properties'           => [
 						'plugin' => $plugin,
 						'title'  => $title,
+						'repo'   => $repo,
 					],
 					'required'             => [ 'plugin', 'title' ],
 					'additionalProperties' => false,
@@ -170,8 +184,15 @@ class Abilities {
 							'type'        => 'string',
 							'description' => __( 'The environment text from get-state.', 'nhrrob-issue-reporter' ),
 						],
+						'labels'           => [
+							'type'        => 'array',
+							'items'       => [ 'type' => 'string' ],
+							'maxItems'    => 10,
+							'description' => __( 'Optional: labels for the issue, such as "bug". GitHub leaves them out when the token cannot set labels in that repository.', 'nhrrob-issue-reporter' ),
+						],
 						'screenshots'      => $images,
 						'allowSiteAddress' => $allow,
+						'repo'             => $repo,
 					],
 					'required'             => [ 'plugin', 'title', 'what' ],
 					'additionalProperties' => false,
@@ -200,6 +221,7 @@ class Abilities {
 						],
 						'screenshots'      => $images,
 						'allowSiteAddress' => $allow,
+						'repo'             => $repo,
 					],
 					'required'             => [ 'plugin', 'number', 'body' ],
 					'additionalProperties' => false,
@@ -215,18 +237,50 @@ class Abilities {
 	/**
 	 * Plugins, token presence, environment and sent reports.
 	 *
-	 * @param array|null $input Optional `repo`, to list only the reports to it.
+	 * @param array|null $input Optional `repo`, `state` and `search`, to narrow the sent reports.
 	 * @return array
 	 */
 	public function get_state( $input = null ) {
-		$state = ( new Rest() )->state();
-		$repo  = is_array( $input ) && isset( $input['repo'] ) ? Repos::normalize( $input['repo'] ) : '';
-
-		if ( '' !== $repo ) {
-			$state['reports'] = array_values( wp_list_filter( $state['reports'], [ 'repo' => $repo ] ) );
-		}
+		$state            = ( new Rest() )->state();
+		$state['reports'] = self::filter_reports( $state['reports'], is_array( $input ) ? $input : [] );
 
 		return $state;
+	}
+
+	/**
+	 * Sent reports narrowed by repository, state and a search, as the Sent tab does.
+	 *
+	 * @param array $reports Rows from Reports::all().
+	 * @param array $input   `repo`, `state` (open or closed), `search` (title text or issue number).
+	 * @return array
+	 */
+	public static function filter_reports( array $reports, array $input ) {
+		$repo   = isset( $input['repo'] ) ? Repos::normalize( $input['repo'] ) : '';
+		$state  = isset( $input['state'] ) && in_array( $input['state'], [ 'open', 'closed' ], true ) ? $input['state'] : '';
+		$search = isset( $input['search'] ) && is_scalar( $input['search'] ) ? trim( (string) $input['search'] ) : '';
+		$number = preg_match( '/^#?(\d+)$/', $search, $match ) ? (int) $match[1] : 0;
+
+		if ( '' !== $repo ) {
+			$reports = wp_list_filter( $reports, [ 'repo' => $repo ] );
+		}
+
+		if ( '' !== $state ) {
+			$reports = wp_list_filter( $reports, [ 'state' => $state ] );
+		}
+
+		if ( '' !== $search ) {
+			$kept = [];
+
+			foreach ( $reports as $report ) {
+				if ( ( $number && (int) $report['number'] === $number ) || false !== mb_stripos( (string) $report['title'], $search ) ) {
+					$kept[] = $report;
+				}
+			}
+
+			$reports = $kept;
+		}
+
+		return array_values( $reports );
 	}
 
 	/**

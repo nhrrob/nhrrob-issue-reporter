@@ -1857,3 +1857,423 @@ html:has(.#{$p}-app[data-theme='dark']) #wpfooter {
 .#{$p}-form__foot {
 	border-radius: 0 0 var(--ir-r) var(--ir-r);
 }
+
+/* ---- Connect GitHub and the token how-to ---- */
+.#{$p}-connect {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--ir-border);
+
+	p {
+		margin: 0;
+	}
+
+	.#{$p}-btn .#{$p}-icon {
+		margin-right: 2px;
+	}
+
+	&__code {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+
+		code {
+			padding: 8px 14px;
+			border: 1px dashed var(--ir-border-strong);
+			border-radius: var(--ir-rs);
+			background: var(--ir-surface);
+			color: var(--ir-text);
+			font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+			font-size: 24px;
+			font-weight: 700;
+			letter-spacing: 0.12em;
+		}
+	}
+
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+}
+
+.#{$p}-tokenhow {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+
+	ol {
+		margin: 0 0 0 18px;
+		color: var(--ir-muted);
+		font-size: 13px;
+	}
+
+	li {
+		margin: 2px 0;
+	}
+}
+
+/* ---- Settings → Client widget ---- */
+.#{$p}-wset {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+
+	&__row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	&__text {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		gap: 2px;
+
+		strong {
+			font-size: 15px;
+			font-weight: 600;
+		}
+	}
+
+	&__group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+
+		legend,
+		strong {
+			padding: 0;
+			font-size: 14px;
+			font-weight: 600;
+		}
+
+		p {
+			margin: 0;
+		}
+	}
+
+	&__roles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 18px;
+	}
+
+	&__chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+
+		span {
+			padding: 2px 10px;
+			border: 1px solid var(--ir-border);
+			border-radius: 999px;
+			font-size: 12px;
+		}
+	}
+}
+
+/* ---- Inbox ---- */
+.#{$p}-inbox {
+	display: grid;
+	grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+
+	&__list {
+		ul {
+			margin: 0;
+			padding: 6px;
+			list-style: none;
+		}
+
+		li {
+			margin: 0;
+		}
+	}
+
+	&__search {
+		padding: 12px 12px 6px;
+	}
+
+	&__row {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		width: 100%;
+		padding: 12px;
+		border: 0;
+		border-radius: var(--ir-rs);
+		background: transparent;
+		color: var(--ir-text);
+		text-align: left;
+		cursor: pointer;
+
+		strong {
+			overflow: hidden;
+			font-weight: 600;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.#{$p}-muted {
+			font-size: 12px;
+		}
+
+		&:hover {
+			background: var(--ir-field);
+		}
+
+		&.is-on {
+			background: var(--ir-accent-soft);
+		}
+	}
+
+	&__tags {
+		display: flex;
+		gap: 6px;
+	}
+
+	&__empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding: 48px 24px;
+		border: 1px dashed var(--ir-border-strong);
+		border-radius: var(--ir-r);
+		color: var(--ir-muted);
+		text-align: center;
+
+		strong {
+			color: var(--ir-text);
+		}
+	}
+
+	&__item {
+		overflow: visible;
+	}
+
+	&__head {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 16px 20px;
+		border-bottom: 1px solid var(--ir-border);
+	}
+
+	&__avatar {
+		display: inline-grid;
+		flex: 0 0 auto;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		background: var(--ir-accent-soft);
+		color: var(--ir-accent-text);
+		font-weight: 700;
+	}
+
+	&__title {
+		flex: 1 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		font-size: 15px;
+		font-weight: 600;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	&__body {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		padding: 20px;
+	}
+
+	&__shot {
+		position: relative;
+		display: block;
+		overflow: hidden;
+		border: 1px solid var(--ir-border);
+		border-radius: var(--ir-rs);
+		background: var(--ir-field);
+
+		img {
+			display: block;
+			width: 100%;
+			max-height: 420px;
+			object-fit: contain;
+		}
+
+		span {
+			position: absolute;
+			right: 10px;
+			bottom: 10px;
+			padding: 4px 10px;
+			border-radius: 8px;
+			background: rgba(20, 22, 43, 0.75);
+			color: #fff;
+			font-size: 12px;
+		}
+	}
+
+	&__facts {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+		gap: 10px;
+		margin: 0;
+
+		div {
+			padding: 10px 12px;
+			border: 1px solid var(--ir-border);
+			border-radius: var(--ir-rs);
+		}
+
+		dt {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			color: var(--ir-muted);
+			font-size: 12px;
+		}
+
+		dd {
+			margin: 2px 0 0;
+			overflow-wrap: anywhere;
+			font-weight: 600;
+		}
+	}
+
+	&__console {
+		overflow: hidden;
+		border: 1px solid var(--ir-bad-bg);
+		border-radius: var(--ir-rs);
+
+		span {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 12px;
+			background: var(--ir-bad-bg);
+			color: var(--ir-bad);
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		pre {
+			margin: 0;
+			padding: 12px;
+			overflow: auto;
+			max-height: 200px;
+			font-size: 12px;
+			white-space: pre-wrap;
+		}
+	}
+
+	&__labels {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	&__send {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding-top: 18px;
+		border-top: 1px solid var(--ir-border);
+
+		h3 {
+			margin: 0;
+			color: var(--ir-text);
+			font-size: 14px;
+			font-weight: 600;
+		}
+
+		p {
+			margin: 0;
+		}
+	}
+
+	&__preview {
+		summary {
+			color: var(--ir-accent-text);
+			font-size: 13px;
+			cursor: pointer;
+		}
+
+		pre {
+			max-height: 280px;
+			margin: 8px 0 0;
+			padding: 12px;
+			overflow: auto;
+			border: 1px solid var(--ir-border);
+			border-radius: var(--ir-rs);
+			background: var(--ir-field);
+			font-size: 12px;
+			white-space: pre-wrap;
+		}
+	}
+
+	&__foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		padding: 14px 20px;
+		border-top: 1px solid var(--ir-border);
+	}
+}
+
+.#{$p}-kind {
+	padding: 1px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+
+	&--bug {
+		background: var(--ir-bad-bg);
+		color: var(--ir-bad);
+	}
+
+	&--change {
+		background: var(--ir-accent-soft);
+		color: var(--ir-accent-text);
+	}
+
+	&--question {
+		background: var(--ir-warn-bg);
+		color: var(--ir-warn);
+	}
+}
+
+@media (max-width: 1100px) {
+
+	.#{$p}-inbox {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* A link drawn as a button keeps the button's look over wp-admin's link colours. */
+.#{$p}-app a.#{$p}-btn,
+.#{$p}-app a.#{$p}-btn:hover,
+.#{$p}-app a.#{$p}-btn:focus,
+.#{$p}-app a.#{$p}-btn:active {
+	color: var(--ir-text);
+	text-decoration: none;
+}
+
+.#{$p}-app a.#{$p}-btn--primary,
+.#{$p}-app a.#{$p}-btn--primary:hover,
+.#{$p}-app a.#{$p}-btn--primary:focus,
+.#{$p}-app a.#{$p}-btn--primary:active {
+	color: #fff;
+}

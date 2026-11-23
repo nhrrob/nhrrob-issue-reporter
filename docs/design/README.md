@@ -9,11 +9,11 @@ the design is versioned next to the code.
 | `Premium.dc.html` | New report, light (switch `dark` for dark mode) | 0.4.0 |
 | `PremiumCarbon.dc.html` | The same screen in dark mode | 0.4.0 |
 | `AuroraSent.dc.html` | Sent: stats, filters, rows, inline comment | 0.4.0 |
-| `AuroraSettings.dc.html` | Settings: GitHub, Repositories and Client widget tabs | 0.4.0, without the Client widget tab |
-| `AuroraInbox.dc.html` | The client feedback inbox (UAT) | planned |
-| `AuroraWidget.dc.html` | The feedback widget on a client's page (UAT) | planned |
+| `AuroraSettings.dc.html` | Settings: GitHub, Repositories and Client widget tabs | 0.4.0; Client widget 0.5.0 |
+| `AuroraInbox.dc.html` | The client feedback inbox (UAT) | 0.5.0, without Reply |
+| `AuroraWidget.dc.html` | The feedback widget on a client's page (UAT) | 0.5.0 |
 
 The numbers and names are sample data. Some drawn pieces are not built yet:
-type and severity labels, steps as a reorderable list, screenshot
-annotation, Templates and ⌘K search. `.ai/DESIGN.md` is the written rule set;
-where the two differ, the code follows `.ai/DESIGN.md`.
+replying to the reviewer, steps as a reorderable list, Templates and ⌘K
+search. `.ai/DESIGN.md` is the written rule set; where the two differ, the
+code follows `.ai/DESIGN.md`.

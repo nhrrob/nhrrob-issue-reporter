@@ -88,16 +88,17 @@ class ReposTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'repos' => [
+				'repos'  => [
 					'nhrrob-secure/nhrrob-secure.php' => 'nhrrob/nhrrob-secure',
 					'hello.php'                       => 'nhrrob/hello',
 					'mu:site.php'                     => 'nhrrob/site',
 					'theme:nazmulrobin'               => 'nhrrob/nazmulrobin_blog',
 				],
-				'extra' => [
+				'extra'  => [
 					[ 'label' => 'The app', 'repo' => 'nhrrob/app' ],
 					[ 'label' => 'nhrrob/other', 'repo' => 'nhrrob/other' ],
 				],
+				'widget' => Settings::widget( [] ),
 			],
 			$clean
 		);

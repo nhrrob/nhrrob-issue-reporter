@@ -38,13 +38,24 @@ The name shown in the UI is **Report Issue**. "NHR" never appears.
 - **New report:** four numbered steps (Where it goes, What happened, Screenshots, Environment) and a footer saying where it goes, with Clear and Send (⌘/Ctrl+Enter). Right column: Live preview, Possible duplicates with "Comment instead". The typed text is a draft in `localStorage` (`nhrrob-issue-reporter-draft`) until sent or cleared.
 - **Sent:** four stats, a toolbar (state, plugin, search, sort; kept in the address as `ir_state`, `ir_repo`, `ir_q`, `ir_sort`), rows with a state tile and pill, Comment opening a box under its row.
 - **Settings:** tabs. GitHub: connection card, three-step checklist, token form (or a note when it is in `wp-config.php`). Repositories: filters (has a repository, not set, set here, all), search, groups, a field per row saved on blur; other repositories below.
+- **Inbox** (sidebar group "Client feedback"): New, Sent and Done with counts in the header; a list with search on the left (text, who, page, age, kind and error tags); the chosen feedback on the right: screenshot ("Open full size"), facts (from, page, browser, screen, sent), console box, kind and severity as segmented controls, then "Send to GitHub" (repository picker, title from the first sentence, the text, the tick for page, screenshot and errors, "What will be sent"), and a footer with Delete (asks once, in place), Mark done or Move back to New, and Send to GitHub.
+- **Settings → GitHub**: "Connect GitHub" first (a code in large mono type, Copy, Open GitHub, Cancel), then "Or use a token" with three steps and the pre-filled "Create a token on GitHub" link.
+- **Settings → Client widget**: the switch, roles as checkboxes, the floating-button switch, where feedback goes, the captured chips, Save.
 
-Below 1100px the Report columns stack; below 782px the sidebar becomes a row above the content.
+Below 1100px the Report columns and the Inbox stack; below 782px the sidebar becomes a row above the content.
 
 ## 5. Copy
 
 Plain words from the site owner's side. Say what will be sent and where. Errors say what went wrong and what to do next.
 
-## 6. Planned (drawn on the canvas, not built)
+## 6. The feedback widget
 
-The client feedback widget and the Inbox (UAT), shown in `docs/design/AuroraWidget.dc.html` and `AuroraInbox.dc.html`; type and severity labels; ⌘K search.
+Inside a shadow root, with its own copy of the tokens (`admin/src/widget/style.scss`), light and dark, following the system or the switch in its panel (same `localStorage` key as the app).
+
+- A floating "Feedback" pill bottom right on the site (CTA gradient), and the admin-bar item "Report an issue" everywhere.
+- Open: a dimmed overlay; the screenshot on the left with a floating toolbar (box, arrow, draw, text, blur, Undo); a 380px panel on the right: "Send feedback", the marks count, "What's wrong?", Kind (Bug, Change, Question), "Added for the developer" chips that switch off, the reviewer's initial and name, Send. Marks are drawn in orange `#ea580c`, text with a white halo, blur as pixels.
+- Below 782px the panel goes under the screenshot. Escape closes. Ctrl or Cmd + Enter sends.
+
+## 7. Planned (drawn on the canvas, not built)
+
+Replying to the reviewer from the Inbox; steps as a reorderable list; Templates; ⌘K search.

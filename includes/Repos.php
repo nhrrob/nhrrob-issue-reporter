@@ -162,4 +162,66 @@ class Repos {
 
 		return $targets;
 	}
+
+	/**
+	 * The target a request names, when its repository is known.
+	 *
+	 * A plugin, must-use plugin or theme without one can be given a
+	 * repository here (the `repo` input of the abilities): it is checked with
+	 * GitHub and saved under Settings, as the Repositories tab would.
+	 *
+	 * @param mixed $key  Key from all(), such as a plugin file.
+	 * @param mixed $repo Optional repository for a target without one.
+	 * @return array|\WP_Error One target, as all() returns it.
+	 */
+	public static function resolve( $key, $repo = null ) {
+		$targets = self::all();
+		$key     = is_string( $key ) ? $key : '';
+
+		if ( ! isset( $targets[ $key ] ) ) {
+			if ( 0 === strpos( $key, 'repo:' ) ) {
+				/* translators: %s: repository such as owner/name. */
+				return self::refused( sprintf( __( '%s is not one of the other repositories. Add it under Tools > Report Issue > Settings > Repositories first.', 'nhrrob-issue-reporter' ), substr( $key, 5 ) ) );
+			}
+
+			return self::refused( __( 'Choose an installed plugin, must-use plugin or theme, or a saved repository. get-state lists them.', 'nhrrob-issue-reporter' ) );
+		}
+
+		$target = $targets[ $key ];
+
+		if ( '' !== $target['repo'] ) {
+			return $target;
+		}
+
+		$clean = self::normalize( $repo );
+
+		if ( '' === $clean ) {
+			/* translators: %s: plugin or theme name. */
+			return self::refused( sprintf( __( '%s does not name its GitHub repository. Save it under Tools > Report Issue > Settings > Repositories, or give it as `repo` (owner/name).', 'nhrrob-issue-reporter' ), $target['name'] ) );
+		}
+
+		$checked = GitHub::check( $clean );
+
+		if ( is_wp_error( $checked ) ) {
+			return self::refused( $checked->get_error_message() );
+		}
+
+		$settings                  = Settings::get();
+		$settings['repos'][ $key ] = $clean;
+		Settings::update( $settings );
+
+		$target['repo'] = $clean;
+
+		return $target;
+	}
+
+	/**
+	 * A 400 answer with a message.
+	 *
+	 * @param string $message Message.
+	 * @return \WP_Error
+	 */
+	private static function refused( $message ) {
+		return new \WP_Error( 'nhrrob_issue_reporter_no_repo', $message, [ 'status' => 400 ] );
+	}
 }

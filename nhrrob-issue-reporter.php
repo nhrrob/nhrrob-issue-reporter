@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: NHR Issue Reporter
- * Description: Report an issue with a plugin to its GitHub repository, without leaving the dashboard.
+ * Plugin Name: NHR Issue Reporter – Client Feedback & Bug Reports
+ * Description: Client feedback and bug reports for WordPress: a Report button with screenshot markup, an Inbox, and issues sent to GitHub.
  * Author: Nazmul Hasan Robin
  * Author URI: https://profiles.wordpress.org/nhrrob/
- * Version: 0.4.1
+ * Version: 0.5.0
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Text Domain: nhrrob-issue-reporter
@@ -30,7 +30,7 @@ final class NHRRob_Issue_Reporter {
 	 *
 	 * @var string
 	 */
-	const VERSION = '0.4.1';
+	const VERSION = '0.5.0';
 
 	/**
 	 * Class constructor
@@ -60,7 +60,9 @@ final class NHRRob_Issue_Reporter {
 
 	/**
 	 * Initialize the plugin. Everything it does happens in the dashboard, in
-	 * a REST request the dashboard app makes, or when an ability is run.
+	 * a REST request the dashboard app or the feedback widget makes, or when
+	 * an ability is run. On the site's pages only the widget loads, and only
+	 * for the people it is switched on for.
 	 *
 	 * @return void
 	 */
@@ -68,7 +70,11 @@ final class NHRRob_Issue_Reporter {
 		add_filter( 'extra_plugin_headers', [ \NHRRob\IssueReporter\Repos::class, 'headers' ] );
 		add_filter( 'extra_theme_headers', [ \NHRRob\IssueReporter\Repos::class, 'theme_headers' ] );
 		( new \NHRRob\IssueReporter\Rest() )->init();
+		( new \NHRRob\IssueReporter\Connect() )->init();
 		( new \NHRRob\IssueReporter\Abilities() )->init();
+		( new \NHRRob\IssueReporter\Feedback\Store() )->init();
+		( new \NHRRob\IssueReporter\Feedback\Routes() )->init();
+		( new \NHRRob\IssueReporter\Feedback\Widget() )->init();
 
 		if ( is_admin() ) {
 			( new \NHRRob\IssueReporter\Admin() )->init();
