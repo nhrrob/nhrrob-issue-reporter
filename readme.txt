@@ -4,7 +4,7 @@ Tags: feedback, bug report, uat, client feedback, github
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.5.1
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,13 @@ Nothing is sent to GitHub in the background or for visitors.
 - [GitHub Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service)
 - [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
 
+An agency hub, only after you paste a hub key under Settings → Agency hub. The hub is another WordPress site, run by the agency that gave you the key, not a service of ours:
+
+- connecting: the key's token, your site's address and name, and the plugin's version, to receive this site's own secret;
+- "Send to agency" in the Inbox, or each new piece of feedback when you switch that on: its text, kind, severity, page, browser, screen size, console errors, the reporter's display name, and the screenshot. Signed with the secret.
+
+Nothing goes to the hub before you connect, and Disconnect forgets it. What the agency does with the feedback is up to the agency.
+
 == Frequently Asked Questions ==
 
 = Who can send feedback with the widget? =
@@ -128,7 +135,8 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 
 == Changelog ==
 
-= 0.5.1 =
+= 0.6.0 =
+* New: Agency hub. An agency that looks after the site can give a key; feedback then goes to its own WordPress site, from the Inbox ("Send to agency") or as it arrives. Settings → Agency hub.
 * Better: the Connect GitHub screen and the FAQ say what GitHub's approval page shows, so it can be told apart from a copy.
 * Developers: the nhrrob_issue_reporter_can_send, nhrrob_issue_reporter_feedback_row, nhrrob_issue_reporter_targets and nhrrob_issue_reporter_issue_state filters. A plugin or theme can be routed to another tracker; it then needs no GitHub repository or token, and is never sent to GitHub.
 * Better: the Inbox says "Send as an issue", since an issue may go somewhere other than GitHub.

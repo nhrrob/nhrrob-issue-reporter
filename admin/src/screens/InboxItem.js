@@ -147,6 +147,17 @@ export default function InboxItem( {
 			.then( ( answer ) => onChange( answer.item ) )
 			.catch( ( e ) => toast( e.message || String( e ), 'error' ) );
 
+	const toHub = () => {
+		setBusy( true );
+		api( '/hub/send', 'POST', { id: item.id } )
+			.then( ( answer ) => {
+				onChange( answer.item );
+				toast( __( 'Sent to the agency', 'nhrrob-issue-reporter' ) );
+			} )
+			.catch( ( e ) => toast( e.message || String( e ), 'error' ) )
+			.finally( () => setBusy( false ) );
+	};
+
 	const send = () => {
 		if ( ! file || ! title.trim() || ! text.trim() || busy ) {
 			return;
@@ -213,6 +224,11 @@ export default function InboxItem( {
 					<External href={ item.issue.url }>
 						{ item.issue.repo + '#' + item.issue.number }
 					</External>
+				) }
+				{ item.hub > 0 && (
+					<span className={ P + 'pill ' + P + 'pill--info' }>
+						{ __( 'Sent to agency', 'nhrrob-issue-reporter' ) }
+					</span>
 				) }
 			</header>
 
@@ -473,6 +489,11 @@ export default function InboxItem( {
 				) : (
 					<Button onClick={ () => change( { status: 'done' } ) }>
 						{ __( 'Mark done', 'nhrrob-issue-reporter' ) }
+					</Button>
+				) }
+				{ data.hub && data.hub.connected && ! item.hub && (
+					<Button disabled={ busy } onClick={ toHub }>
+						{ __( 'Send to agency', 'nhrrob-issue-reporter' ) }
 					</Button>
 				) }
 				{ item.status !== 'sent' && targets.length > 0 && (

@@ -238,6 +238,7 @@ class Store {
 				'url' => $shot,
 			] : null,
 			'issue'    => $meta['issue'],
+			'hub'      => (int) $meta['hub'],
 		];
 
 		/**
@@ -271,6 +272,7 @@ class Store {
 				'errors'   => [],
 				'shot'     => 0,
 				'issue'    => null,
+				'hub'      => 0,
 			]
 		);
 	}

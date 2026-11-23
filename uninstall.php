@@ -16,7 +16,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * @return void
  */
 function nhrrob_issue_reporter_uninstall_site() {
-	foreach ( [ 'nhrrob_issue_reporter_settings', 'nhrrob_issue_reporter_token', 'nhrrob_issue_reporter_reports' ] as $option ) {
+	foreach ( [ 'nhrrob_issue_reporter_settings', 'nhrrob_issue_reporter_token', 'nhrrob_issue_reporter_reports', 'nhrrob_issue_reporter_hub' ] as $option ) {
 		delete_option( $option );
 	}
 
