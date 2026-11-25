@@ -4,7 +4,7 @@ Tags: feedback, bug report, uat, client feedback, github
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.6.0
+Stable tag: 0.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -134,6 +134,9 @@ In the plugin's `admin/src` folder. `admin/build` is made from it with `@wordpre
 7. The dark theme.
 
 == Changelog ==
+
+= 0.6.1 =
+* The settings screen can take a shared look (colours, corners, font) and a fixed light or dark theme from another NHR plugin, and keeps its own look when none is set. Developers: the `nhr_admin_parent_menu` filter moves the screen under another menu.
 
 = 0.6.0 =
 * New: Agency hub. An agency that looks after the site can give a key; feedback then goes to its own WordPress site, from the Inbox ("Send to agency") or as it arrives. Settings → Agency hub.
